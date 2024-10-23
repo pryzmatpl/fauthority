@@ -1,4 +1,4 @@
-#include "node.hpp"
+#include "P2PNode.hpp"
 
 void P2PNode::initializeOpenSSL() {
     // Initialize OpenSSL
