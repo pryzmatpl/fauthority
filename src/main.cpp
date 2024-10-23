@@ -1,5 +1,5 @@
 #include <iostream>
-#include "node.hpp"
+#include "P2PNode.hpp"
 
 int main() {
     try {
