@@ -49,10 +49,12 @@ bool DHT::removeNode(const std::string& removeNodeAddr) {
         if (_hosts[*beg]._addr == removeNodeAddr) {
             _hosts.erase(*beg);
             _lookup.erase(beg);
+
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 const std::string DHT::ownHost() {
