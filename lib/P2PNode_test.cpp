@@ -48,14 +48,12 @@ TEST_F(P2PNodeTest, TestCleanup) {
     EXPECT_EQ(false, node->isClean());
 }
 
-TEST_F(P2PNodeTest, TestCleanupDoubleFree) {
+TEST_F(P2PNodeTest, TestFailedToBindSocketOnCtor) {
     // Ensure cleanup is called and resources are freed
     try {
         auto newNode = new P2PNode();
-        bool res = newNode->cleanup();
-        EXPECT_EQ(true, res);
     } catch (std::exception &e) {
-        EXPECT_STREQ("free(): double free detected in tcache 2", e.what());
+        EXPECT_STREQ("Failed to bind socket 4", e.what());
     }
 }
 

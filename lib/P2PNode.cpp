@@ -45,7 +45,9 @@ void P2PNode::initializeNetwork() {
 
     // Bind socket
     if (bind(socketFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        throw std::runtime_error("Failed to bind socket");
+        char* message;
+        asprintf(&message, "Failed to bind socket %d", socketFd);
+        throw std::runtime_error(message);
     }
 
     // Start listening
@@ -97,10 +99,9 @@ P2PNode& P2PNode::operator=(P2PNode const& rhs) {
 
 P2PNode::P2PNode(P2PNode const& rhs) {
     try {
-        keyPair = rhs.keyPair;
-        peers = rhs.peers;
-        PORT = rhs.PORT;
-        socketFd = rhs.socketFd;
+        auto temp = std::move(this);
+        *this = std::move(rhs);
+        delete temp;
     } catch (const std::exception& e) {
         std::cerr << "Initialization failed: " << e.what() << std::endl;
         cleanup();
