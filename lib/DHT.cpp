@@ -31,6 +31,8 @@ const uint64_t DHT::NodeInfo::uuid() {
 DHT::NodeInfo::NodeInfo(const std::string& addr)
     : _addr(addr), _id(uuid()), _ts(std::chrono::system_clock::now()) {}
 
+DHT::NodeInfo::NodeInfo() {}
+
 DHT::DHT(const std::string& address)
     : ownAddress(address), _currentNode(NodeInfo(address)) {}
 

@@ -33,6 +33,7 @@ private:
     std::string ownAddress;
 
 public:
+    DHT();
     DHT(const std::string& address);
 
     bool addHost(const std::string& addr);
