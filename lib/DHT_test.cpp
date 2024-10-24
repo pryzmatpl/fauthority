@@ -52,9 +52,21 @@ TEST_F(DHTTest, TestLocalCreatedAndAddHostsAndRemove) {
     dht->addHost("192.168.1.112");
     
     dht->removeNode("192.168.1.112");
-
     EXPECT_EQ(1, dht->countHosts());
     EXPECT_EQ(1, dht->countLookups());
+
+    dht->removeNode("192.168.1.111");
+    EXPECT_EQ(0, dht->countHosts());
+    EXPECT_EQ(0, dht->countLookups());
+}
+
+TEST_F(DHTTest, TestLocalRemovalOfEmpty) {
+    std::string addr = "127.0.0.1";
+    dht = new DHT(addr);
+    dht->removeNode("192.168.1.111");
+
+    EXPECT_EQ(0, dht->countHosts());
+    EXPECT_EQ(0, dht->countLookups());
 }
 
 int main(int argc, char **argv) {
