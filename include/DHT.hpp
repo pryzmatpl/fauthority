@@ -37,7 +37,7 @@ public:
 
     bool addHost(const std::string& addr);
 
-    bool removeNode(const NodeInfo& removeNode);
+    bool removeNode(const std::string& removeNode);
 
     const std::string ownHost();
 

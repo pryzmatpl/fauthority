@@ -42,11 +42,15 @@ bool DHT::addHost(const std::string& addr) {
     return true;
 }
 
-bool DHT::removeNode(const NodeInfo& removeNode) {
-    _hosts.erase(removeNode._id);
+bool DHT::removeNode(const std::string& removeNodeAddr) {
+    int lookupIndex = 0;
+    for (auto beg = _lookup.begin(); beg != _lookup.end(); beg++) {
+        if (_hosts[*beg]._addr == removeNodeAddr) {
+            _lookup.erase(beg);
+        }
+        lookupIndex++;
+    }
 
-    auto it = std::remove(_lookup.begin(), _lookup.end(), removeNode._id);
-    _lookup.erase(it, _lookup.end());
     return true;
 }
 
