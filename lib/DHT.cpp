@@ -44,6 +44,16 @@ bool DHT::addHost(const std::string& addr) {
     return true;
 }
 
+std::vector<std::string> DHT::getPeers() {
+    std::vector<std::string> peers;
+    
+    for (const auto& host : _hosts) {
+        peers.push_back(host.second._addr);
+    }
+
+    return peers;
+}
+
 bool DHT::removeNode(const std::string& removeNodeAddr) {
     for (auto beg = _lookup.begin(); beg != _lookup.end(); beg++) {
         if (_hosts[*beg]._addr == removeNodeAddr) {

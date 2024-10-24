@@ -38,6 +38,8 @@ public:
 
     bool addHost(const std::string& addr);
 
+    std::vector<std::string> getPeers();
+
     bool removeNode(const std::string& removeNode);
 
     const std::string ownHost();

@@ -72,6 +72,24 @@ TEST_F(DHTTest, TestLocalRemovalOfEmpty) {
     EXPECT_EQ(false, result);
 }
 
+TEST_F(DHTTest, TestLocalCreateHostsAndReadAll) {
+    std::string addr = "127.0.0.1";
+    dht = new DHT(addr);
+
+    dht->addHost("192.168.1.111");
+    dht->addHost("192.168.1.112");
+
+    auto allHosts = dht->getPeers();
+
+    EXPECT_EQ(2, allHosts.size());
+
+    auto it = std::find(allHosts.begin(), allHosts.end(), "192.168.1.112");
+    EXPECT_TRUE(it != allHosts.end());
+
+    it = std::find(allHosts.begin(), allHosts.end(), "192.168.1.111");
+    EXPECT_FALSE(it == allHosts.end());
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
