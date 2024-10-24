@@ -37,7 +37,8 @@ DHT::DHT(const std::string& address)
 bool DHT::addHost(const std::string& addr) {
     NodeInfo info(addr);
     _lookup.push_back(info._id);
-    _hosts[info._id] = info;
+    _hosts.emplace(info._id, std::move(info));
+    
     return true;
 }
 
