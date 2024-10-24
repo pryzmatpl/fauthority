@@ -54,6 +54,60 @@ void P2PNode::initializeNetwork() {
     }
 }
 
+P2PNode& P2PNode::operator=(P2PNode const& rhs) {
+    if (this != &rhs) { 
+        // Clean up current resources
+        cleanup();
+
+        try {
+            // Deep copy of keyPair
+            if (rhs.keyPair) {
+                // Generate a new RSA key pair and copy the content from rhs.keyPair
+                keyPair = RSA_new();
+                if (!keyPair) {
+                    throw std::runtime_error("Failed to allocate RSA keyPair");
+                }
+
+                // Copy the key components (deep copy)
+                // The specific OpenSSL functions to deep copy key pairs may vary, but generally it involves duplicating the RSA components.
+                if (!RSA_set0_key(keyPair,
+                                 BN_dup(RSA_get0_n(rhs.keyPair)),    // Copy modulus n
+                                 BN_dup(RSA_get0_e(rhs.keyPair)),    // Copy public exponent e
+                                 BN_dup(RSA_get0_d(rhs.keyPair)))) { // Copy private exponent d (if available)
+                    throw std::runtime_error("Failed to copy RSA keyPair");
+                }
+            }
+
+            // Copy non-pointer members
+            peers = rhs.peers;
+            PORT = rhs.PORT;
+
+            // Re-initialize network settings
+            initializeNetwork();
+        } catch (const std::exception& e) {
+            std::cerr << "Copy assignment failed: " << e.what() << std::endl;
+            cleanup();
+            throw; // Rethrow to let the caller handle the failure
+        }
+    }
+
+    return *this; // Return *this to allow chaining of assignment
+}
+
+
+P2PNode::P2PNode(P2PNode const& rhs) {
+    try {
+        keyPair = rhs.keyPair;
+        peers = rhs.peers;
+        PORT = rhs.PORT;
+        socketFd = rhs.socketFd;
+    } catch (const std::exception& e) {
+        std::cerr << "Initialization failed: " << e.what() << std::endl;
+        cleanup();
+        throw;
+    }
+}
+
 P2PNode::P2PNode() {
     try {
         initializeOpenSSL();
@@ -90,15 +144,38 @@ void P2PNode::connectToPeer(const std::string& peerAddress) {
     close(peerSocket);
 }
 
-void P2PNode::cleanup() {
-    if (keyPair) {
-        RSA_free(keyPair);
+bool P2PNode::cleanup() {
+    try {
+        if (keyPair) {
+            RSA_free(keyPair);
+        }
+        if (socketFd >= 0) {
+            shutdown(socketFd, SHUT_RDWR);
+            close(socketFd);
+        }
+        EVP_cleanup();
+        ERR_free_strings();
+    } catch (std::exception &e) {
+        auto clsName = typeid(P2PNode).name();
+        std::cerr << clsName << " " << e.what() << "\n";
     }
-    if (socketFd >= 0) {
-        close(socketFd);
+
+    return true;
+}
+
+int P2PNode::count() {
+    return peers.size();
+}
+
+bool P2PNode::isClean() {
+    int error_code;
+    socklen_t error_code_size = sizeof(error_code);
+    try {        
+        std::cout << error_code << "\n";
+        return (socketFd == -1);
+    } catch (std::exception &e) {
+        std::cerr << e.what() << "\n";
     }
-    EVP_cleanup();
-    ERR_free_strings();
 }
 
 P2PNode::~P2PNode() {

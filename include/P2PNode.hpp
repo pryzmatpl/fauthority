@@ -17,7 +17,7 @@ private:
     RSA* keyPair;
     int socketFd;
     std::vector<std::string> peers;
-    const int PORT = 8080;
+    int PORT = 8080;
     
     void initializeOpenSSL();
     void generateKeyPair();
@@ -25,9 +25,13 @@ private:
 
 public:
     P2PNode();
+    P2PNode(P2PNode const&);
+    P2PNode& operator=(P2PNode const&);
     void addPeer(const std::string& peerAddress);
     void connectToPeer(const std::string& peerAddress);
-    void cleanup();
+    bool cleanup();
+    int count();
+    bool isClean();
     ~P2PNode();
 };
 

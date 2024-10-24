@@ -6,11 +6,11 @@ int main() {
         P2PNode node;
         
         // Add some example peers
-        node.addPeer("192.168.1.100");
-        node.addPeer("192.168.1.101");
+        node.addPeer("192.168.2.229");
+        node.addPeer("192.168.2.53");
         
         // Try connecting to peers
-        node.connectToPeer("192.168.1.100");
+        node.connectToPeer("192.168.2.53");
         
         std::cout << "P2P node running. Press Ctrl+C to exit." << std::endl;
         while(true) {
