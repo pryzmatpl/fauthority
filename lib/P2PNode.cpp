@@ -26,7 +26,7 @@ void P2PNode::generateKeyPair() {
     fclose(privKeyFile);
 }
 
-void P2PNode::initializeNetwork() {
+void P2PNode::initializeNetwork() {    
     // Create socket
     socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (socketFd < 0) {
