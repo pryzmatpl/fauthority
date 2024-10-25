@@ -16,7 +16,7 @@ protected:
     std::shared_ptr<P2PNode> node;
 
     void SetUp() override {
-        node = std::make_shared<P2PNode>(node);  // Initialize node in each test
+        node = std::make_shared<P2PNode>();  // Initialize node in each test        
     }
 
     void TearDown() override {
