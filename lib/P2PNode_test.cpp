@@ -6,21 +6,21 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <fstream>
-
+#include <memory>
 // Mock network constants
 constexpr int PORT = 8080;
 
 // Fixture class for P2PNode tests
 class P2PNodeTest : public ::testing::Test{
 protected:
-    P2PNode* node;
+    std::shared_ptr<P2PNode> node;
 
     void SetUp() override {
-        node = new P2PNode();  // Initialize node in each test
+        node = std::make_shared<P2PNode>(node);  // Initialize node in each test
     }
 
     void TearDown() override {
-        delete node;  // Cleanup node after each test
+        //Fuck Cleanup node after each test
     }
 
     // Helper to check if file exists
