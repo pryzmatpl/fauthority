@@ -36,11 +36,11 @@ public:
     DHT();
     DHT(const std::string& address);
 
-    bool addHost(const std::string& addr);
+    bool addPeer(const std::string& addr);
 
     std::vector<std::string> getPeers();
 
-    bool removeNode(const std::string& removeNode);
+    bool removePeer(const std::string& removePeer);
 
     const std::string ownHost();
 

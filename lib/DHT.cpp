@@ -36,7 +36,7 @@ DHT::NodeInfo::NodeInfo() {}
 DHT::DHT(const std::string& address)
     : ownAddress(address), _currentNode(NodeInfo(address)) {}
 
-bool DHT::addHost(const std::string& addr) {
+bool DHT::addPeer(const std::string& addr) {
     NodeInfo info(addr);
     _lookup.push_back(info._id);
     _hosts.emplace(info._id, std::move(info));
@@ -54,7 +54,7 @@ std::vector<std::string> DHT::getPeers() {
     return peers;
 }
 
-bool DHT::removeNode(const std::string& removeNodeAddr) {
+bool DHT::removePeer(const std::string& removeNodeAddr) {
     for (auto beg = _lookup.begin(); beg != _lookup.end(); beg++) {
         if (_hosts[*beg]._addr == removeNodeAddr) {
             _hosts.erase(*beg);

@@ -29,7 +29,7 @@ TEST_F(DHTTest, TestCreateLocal) {
 TEST_F(DHTTest, TestLocalCreatedAndAddHost) {
     std::string peerAddress = "127.0.0.1";
     dht = new DHT(peerAddress);
-    dht->addHost("192.168.1.111");
+    dht->addPeer("192.168.1.111");
 
     EXPECT_EQ(1, dht->countHosts());
     EXPECT_EQ(1, dht->countLookups());
@@ -38,8 +38,8 @@ TEST_F(DHTTest, TestLocalCreatedAndAddHost) {
 TEST_F(DHTTest, TestLocalCreatedAndAddHosts) {
     std::string peerAddress = "127.0.0.1";
     dht = new DHT(peerAddress);
-    dht->addHost("192.168.1.111");
-    dht->addHost("192.168.1.112");
+    dht->addPeer("192.168.1.111");
+    dht->addPeer("192.168.1.112");
 
     EXPECT_EQ(2, dht->countHosts());
     EXPECT_EQ(2, dht->countLookups());
@@ -48,15 +48,15 @@ TEST_F(DHTTest, TestLocalCreatedAndAddHosts) {
 TEST_F(DHTTest, TestLocalCreatedAndAddHostsAndRemove) {
     std::string peerAddress = "127.0.0.1";
     dht = new DHT(peerAddress);
-    dht->addHost("192.168.1.111");
-    dht->addHost("192.168.1.112");
+    dht->addPeer("192.168.1.111");
+    dht->addPeer("192.168.1.112");
     
-    auto res = dht->removeNode("192.168.1.112");
+    auto res = dht->removePeer("192.168.1.112");
     EXPECT_EQ(true, res);
     EXPECT_EQ(1, dht->countHosts());
     EXPECT_EQ(1, dht->countLookups());
 
-    res = dht->removeNode("192.168.1.111");
+    res = dht->removePeer("192.168.1.111");
     EXPECT_EQ(true, res);
     EXPECT_EQ(0, dht->countHosts());
     EXPECT_EQ(0, dht->countLookups());
@@ -65,7 +65,7 @@ TEST_F(DHTTest, TestLocalCreatedAndAddHostsAndRemove) {
 TEST_F(DHTTest, TestLocalRemovalOfEmpty) {
     std::string addr = "127.0.0.1";
     dht = new DHT(addr);
-    auto result = dht->removeNode("192.168.1.111");
+    auto result = dht->removePeer("192.168.1.111");
 
     EXPECT_EQ(0, dht->countHosts());
     EXPECT_EQ(0, dht->countLookups());
@@ -76,8 +76,8 @@ TEST_F(DHTTest, TestLocalCreateHostsAndReadAll) {
     std::string addr = "127.0.0.1";
     dht = new DHT(addr);
 
-    dht->addHost("192.168.1.111");
-    dht->addHost("192.168.1.112");
+    dht->addPeer("192.168.1.111");
+    dht->addPeer("192.168.1.112");
 
     auto allHosts = dht->getPeers();
 
