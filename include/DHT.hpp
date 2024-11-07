@@ -17,7 +17,7 @@ class DHT {
 public:
     struct NodeInfo {
         static const uint64_t bytesToUint64(const char* bytes);
-        const uint64_t uuid();
+        const uint64_t genUUID();
         std::string _addr;
         uint64_t _id;
         std::chrono::time_point<std::chrono::system_clock> _ts;

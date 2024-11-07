@@ -8,7 +8,7 @@ const uint64_t DHT::NodeInfo::bytesToUint64(const char* bytes) {
     return value;
 }
 
-const uint64_t DHT::NodeInfo::uuid() {
+const uint64_t DHT::NodeInfo::genUUID() {
     static std::random_device randomDev;
     static std::mt19937 randomNumGen(randomDev());
     std::uniform_int_distribution<int> dist(0, 15);
@@ -21,15 +21,13 @@ const uint64_t DHT::NodeInfo::uuid() {
         if (dash[i]) res += "-";
         res += v[dist(randomNumGen)];
         res += v[dist(randomNumGen)];
-    }
-
-    std::cout << "HASH: " << res.c_str() << "\n";
+    }    
 
     return bytesToUint64(res.c_str());
 }
 
 DHT::NodeInfo::NodeInfo(const std::string& addr)
-    : _addr(addr), _id(uuid()), _ts(std::chrono::system_clock::now()) {}
+    : _addr(addr), _id(genUUID()), _ts(std::chrono::system_clock::now()) {}
 
 DHT::NodeInfo::NodeInfo() {}
 
