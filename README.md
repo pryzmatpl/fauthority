@@ -4,7 +4,10 @@ Built in the open. A C++, p2p distributed cert authority.
 
 ![alt text](./docs/land.webp)
 
-## To run
+## To build
+> Just run __build.sh__
+
+#### Detailed:
 
 First, run 
 
@@ -21,4 +24,8 @@ Currently, you will run into an error regarding Openssl. Fix the ./build/CMakeLi
 Then, run
 
 ````
-cmake --build ./build
+cd ./build && cmake ./
+cmake --build ./
+````
+
+These commands are added to build.sh as in the README.md
