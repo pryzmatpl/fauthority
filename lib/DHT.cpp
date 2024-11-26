@@ -76,3 +76,96 @@ int DHT::countLookups() {
 int DHT::countHosts() {
     return _hosts.size();
 }
+
+/** send out the keypair for current node **/
+bool sendHostP2PNode(P2PNode &node)
+{
+    auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        throw std::runtime_error("Failed to create socket");
+    }
+
+    // Bind to port
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(6881);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        throw std::runtime_error("Failed to bind to port");
+    }
+
+    // Receive data
+    char buffer[8];
+    struct sockaddr_in senderAddr;
+    socklen_t senderLen = sizeof(senderAddr);
+    
+    int received = recvfrom(sock, buffer, sizeof(buffer)-1, 0,
+                            (struct sockaddr*)&senderAddr, &senderLen);
+    
+    if (received < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            throw "Timeout";
+        }
+        throw "Error receiving";
+    }
+
+    if ("DISCOVER" == buffer) {
+        auto buf = node.toBuffer();
+        auto sz = sizeof(buf);
+        write(sock, (const void*)buf, sz);
+    }
+
+    return true;
+}
+
+std::vector<P2PNode> DHT::discoverPeers()
+{
+    auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        throw std::runtime_error("Failed to create socket");
+    }
+
+    int broadcast = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) < 0) {
+        close(sock);
+        throw std::runtime_error("Failed to set broadcast option");
+    }
+
+        // Set receive timeout
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    // Bind to port
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(6881);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        throw std::runtime_error("Failed to bind to port");
+    }
+
+    // Receive data
+    char buffer[1024];
+    struct sockaddr_in senderAddr;
+    socklen_t senderLen = sizeof(senderAddr);
+    
+    int received = recvfrom(sock, buffer, sizeof(buffer)-1, 0,
+                            (struct sockaddr*)&senderAddr, &senderLen);
+    
+    if (received < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            throw "Timeout";
+        }
+        throw "Error receiving";
+    }
+
+    buffer[received] = '\0';
+    
+    throw "Return";
+}

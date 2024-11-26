@@ -29,6 +29,7 @@ public:
     P2PNode& operator=(P2PNode const&);
     void addPeer(const std::string& peerAddress);
     void connectToPeer(const std::string& peerAddress);
+    const char* P2PNode::toBuffer();
     bool cleanup();
     int count();
     bool isClean();

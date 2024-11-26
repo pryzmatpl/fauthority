@@ -23,6 +23,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Initializing DHT node at: " << hostAddress << std::endl;
         DHT dht(hostAddress);
 
+        auto currNode = P2PNode();
+
         // Print initial DHT state
         std::cout << "DHT node initialized:" << std::endl;
         std::cout << "Own Address: " << dht.ownHost() << std::endl;
@@ -49,6 +51,15 @@ int main(int argc, char* argv[]) {
             std::cout << "Current peers: " << dht.countHosts() 
                       << ", Lookups: " << dht.countLookups() << std::endl;
             
+            auto foundPeers = dht.discoverPeers(); //Find p2p nodes
+
+            for(auto beg=foundPeers.begin(); beg!=foundPeers.end(); beg++){
+                auto peer = (*beg).toBuffer();
+                dht.addPeer(peer); //Rough idea! 
+            }
+
+            bool sentOutToPeer = dht.sendHostP2PNode(currNode); //Reply to pings
+
             // Get and print current peers
             auto peers = dht.getPeers();
             if (!peers.empty()) {

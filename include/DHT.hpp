@@ -12,37 +12,43 @@
 #include <random>
 #include <iostream>
 #include <unordered_map>
+#include "P2PNode.hpp"
+
+using namespace std;
+using namespace chrono;
 
 class DHT {
 public:
     struct NodeInfo {
         static const uint64_t bytesToUint64(const char* bytes);
         const uint64_t genUUID();
-        std::string _addr;
+        string _addr;
         uint64_t _id;
-        std::chrono::time_point<std::chrono::system_clock> _ts;
+        time_point<system_clock> _ts;
 
-        NodeInfo(const std::string& addr);
+        NodeInfo(const string& addr);
         NodeInfo();
     };
 
 private:
-    std::map<uint64_t, NodeInfo> _hosts;
-    std::vector<uint64_t> _lookup;
+    map<uint64_t, NodeInfo> _hosts;
+    vector<uint64_t> _lookup;
     NodeInfo _currentNode;
-    std::string ownAddress;
+    string ownAddress;
 
 public:
     DHT();
-    DHT(const std::string& address);
+    DHT(const string& address);
 
-    bool addPeer(const std::string& addr);
+    vector<P2PNode> discoverPeers();
+    bool sendHostP2PNode(P2PNode &node);
+    bool addPeer(const string& addr);
 
-    std::vector<std::string> getPeers();
+    vector<string> getPeers();
 
-    bool removePeer(const std::string& removePeer);
+    bool removePeer(const string& removePeer);
 
-    const std::string ownHost();
+    const string ownHost();
 
     int countLookups();
 

@@ -179,6 +179,11 @@ bool P2PNode::isClean() {
     }
 }
 
+const char* P2PNode::toBuffer()
+{
+    return (const char*)keyPair;
+}
+
 P2PNode::~P2PNode() {
     cleanup();
 }
