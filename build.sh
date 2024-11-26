@@ -41,3 +41,6 @@ echo "build:"
 cmake --build ./ || { echo "Build failed."; exit 1; }
 
 echo "Build complete."
+
+echo "Running tests:"
+./*_test
