@@ -30,6 +30,8 @@ echo "cppship:"
 cppship build & wait || true
 
 echo "sed openssl:"
+
+platform_sed 's/module-OpenSSL/OpenSSL/' ./build/CMakeLists.txt
 platform_sed 's/target_link_libraries(fuckauthority_deps INTERFACE openssl::openssl)/target_link_libraries(fuckauthority_deps INTERFACE OpenSSL::SSL OpenSSL::Crypto)/' ./build/CMakeLists.txt
 
 echo "cmake:"
