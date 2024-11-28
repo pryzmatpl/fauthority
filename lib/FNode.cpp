@@ -68,7 +68,6 @@ FNode& FNode::operator=(FNode const& rhs) {
             }
 
             peers = rhs.peers;
-            initializeNetwork();
         } catch (const std::exception& e) {
             std::cerr << "Copy assignment failed: " << e.what() << std::endl;
             cleanup();
@@ -96,7 +95,6 @@ FNode::FNode(string addr) {
         this->address = NodeInfo(addr, 0);
         initializeOpenSSL();
         generateKeyPair();
-        initializeNetwork();
         std::cout << "P2P Node initialized successfully\n";
     } catch (const std::exception& e) {
         std::cerr << "Initialization failed: " << e.what() << std::endl;
@@ -173,5 +171,4 @@ string FNode::getHostAddr()
 FNode::~FNode() {
     cleanup();
 }
-
 

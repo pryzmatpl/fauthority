@@ -24,20 +24,18 @@
 #include "NodeInfo.hpp"
 #include "ConnectionResult.hpp"
 using namespace chrono;
-
 using namespace std;
 
-class FNode {
+class FNode 
+{
 private:
     NodeInfo address;
 
     RSA* keyPair;
     int socketFd;
     std::vector<std::string> peers;
-    
     void initializeOpenSSL();
     void generateKeyPair();
-    void initializeNetwork();
 
 public:
     FNode(string addr);
@@ -51,7 +49,6 @@ public:
     ConnectionResult connectToFAuthority();
     int countPeers();
     bool isClean();
-    void disconnect();
     ~FNode();
 };
 

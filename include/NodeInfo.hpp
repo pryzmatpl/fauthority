@@ -19,15 +19,16 @@
 using namespace std;
 using namespace chrono;
 
-struct NodeInfo {
-        static const uint64_t bytesToUint64(const char* bytes);
-        const uint64_t genUUID();
-        string addr;
-        string id;
-        time_point<system_clock> ts;
+struct NodeInfo 
+{
+    static const uint64_t bytesToUint64(const char* bytes);
+    static const uint64_t genUUID();
+    string addr;
+    string id;
+    time_point<system_clock> ts;
 
-        NodeInfo(const string& addr, const string& id);
-        NodeInfo();
-    };
+    NodeInfo(const string& addr, const string& id);
+    NodeInfo();
+};
 
 #endif // F_NODEINFO_HPP

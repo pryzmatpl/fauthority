@@ -25,19 +25,28 @@ public:
 private:
     map<uint64_t, FNode> hosts;
     vector<uint64_t> lookup;    
+    std::vector<std::string> peers; // List of peers
+    int lookupCount = 0;            // Mock lookup counter
+    string host;
 
 public:
     FServer();
     FServer(const FNode& node);
     FServer(const string& address);
 
-    ListenerStatus listen();
+    ListenerStatus listenFAuth();
     vector<IncomingRequest> acceptIncoming();
     bool refresh();
     void shutdown();
 
-    void FServer::initializeNetwork();
+    void initializeNetwork();
     
+    std::string ownHost() const;
+    void addPeer(const std::string& peerAddress);
+    bool removePeer(const std::string& peerAddress);
+    int countHosts() const;
+    int countLookups() const;
+    std::vector<std::string> getPeers() const;
 };
 
 #endif // DHT_HPP

@@ -71,8 +71,7 @@ int main(int argc, char* argv[]) {
         FSigner fsigner = FSigner();
 
         while(running.load()) {
-            ListenerStatus listenStatus = server.listen();
-            ListenerStatus listenStatus = server.listen();
+            ListenerStatus listenStatus = server.listenFAuth();
 
             std::cout << "FListener status: " <<  listenStatus << std::endl;
 
@@ -95,7 +94,6 @@ int main(int argc, char* argv[]) {
         }
 
         server.shutdown();
-        currNode.disconnect();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;

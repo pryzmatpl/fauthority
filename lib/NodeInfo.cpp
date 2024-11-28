@@ -1,6 +1,6 @@
 #include "FNode.hpp"
 
-const uint64_t FNode::NodeInfo::bytesToUint64(const char* bytes) {
+const uint64_t NodeInfo::bytesToUint64(const char* bytes) {
     uint64_t value = 0;
     for (int i = 0; i < 8; i++) {
         value = (value << 8) | bytes[i];
@@ -8,7 +8,7 @@ const uint64_t FNode::NodeInfo::bytesToUint64(const char* bytes) {
     return value;
 }
 
-const uint64_t FNode::NodeInfo::genUUID() {
+const uint64_t NodeInfo::genUUID() {
     static std::random_device randomDev;
     static std::mt19937 randomNumGen(randomDev());
     std::uniform_int_distribution<int> dist(0, 15);
@@ -22,12 +22,17 @@ const uint64_t FNode::NodeInfo::genUUID() {
         res += v[dist(randomNumGen)];
         res += v[dist(randomNumGen)];
     }    
-
-    return bytesToUint64(res.c_str());
+    
+    uint64_t value = 0;
+    const auto bytes = res.c_str();
+    for (int i = 0; i < 8; i++) {
+        value = (value << 8) | bytes[i];
+    }
+    return value;
 }
 
 
-FNode::NodeInfo::NodeInfo(const std::string& addr, const std::string& id)
+NodeInfo::NodeInfo(const std::string& addr, const std::string& id)
     : addr(addr), id(id), ts(std::chrono::system_clock::now()) {}
 
-FNode::NodeInfo::NodeInfo() {}
+NodeInfo::NodeInfo() {}

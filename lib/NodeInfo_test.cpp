@@ -1,96 +1,73 @@
 #include <gtest/gtest.h>
-#include "DHT.hpp"
-#include <openssl/evp.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <arpa/inet.h>
+#include "NodeInfo.hpp"
 #include <cstring>
-#include <fstream>
+#include <thread>
 
-// Fixture class for DHT tests
-class DHTTest : public ::testing::Test{
+class NodeInfoTest : public ::testing::Test {
 protected:
-    DHT* dht;
-    
-    void SetUp() override { }
+    void SetUp() override {
+    }
 
     void TearDown() override {
-        delete dht;  // Cleanup node after each test
     }
 };
 
-TEST_F(DHTTest, TestCreateLocal) {
-    std::string peerAddress = "127.0.0.1";
-    dht = new DHT(peerAddress);
-
-    EXPECT_EQ("127.0.0.1", dht->ownHost());
+// Test: Default Constructor
+TEST_F(NodeInfoTest, DefaultConstructor) {
+    NodeInfo node;
+    EXPECT_EQ(node.addr, ""); 
+    EXPECT_EQ(node.id, "");   
+    EXPECT_NO_THROW(auto time = node.ts);
 }
 
-TEST_F(DHTTest, TestLocalCreatedAndAddHost) {
-    std::string peerAddress = "127.0.0.1";
-    dht = new DHT(peerAddress);
-    dht->addPeer("192.168.1.111");
-
-    EXPECT_EQ(1, dht->countHosts());
-    EXPECT_EQ(1, dht->countLookups());
+// Test: Parameterized Constructor
+TEST_F(NodeInfoTest, ParameterizedConstructor) {
+    NodeInfo node("192.168.1.1", "unique-id");
+    EXPECT_EQ(node.addr, "192.168.1.1");
+    EXPECT_EQ(node.id, "unique-id");
+    EXPECT_NO_THROW(auto time = node.ts);
 }
 
-TEST_F(DHTTest, TestLocalCreatedAndAddHosts) {
-    std::string peerAddress = "127.0.0.1";
-    dht = new DHT(peerAddress);
-    dht->addPeer("192.168.1.111");
-    dht->addPeer("192.168.1.112");
+// Test: bytesToUint64
+TEST_F(NodeInfoTest, BytesToUint64) {
+    const char testBytes[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    uint64_t result = NodeInfo::bytesToUint64(testBytes);
 
-    EXPECT_EQ(2, dht->countHosts());
-    EXPECT_EQ(2, dht->countLookups());
+    uint64_t expected = 0x0102030405060708;
+    EXPECT_EQ(result, expected);
 }
 
-TEST_F(DHTTest, TestLocalCreatedAndAddHostsAndRemove) {
-    std::string peerAddress = "127.0.0.1";
-    dht = new DHT(peerAddress);
-    dht->addPeer("192.168.1.111");
-    dht->addPeer("192.168.1.112");
-    
-    auto res = dht->removePeer("192.168.1.112");
-    EXPECT_EQ(true, res);
-    EXPECT_EQ(1, dht->countHosts());
-    EXPECT_EQ(1, dht->countLookups());
+// Test: genUUID (Basic functionality and uniqueness)
+TEST_F(NodeInfoTest, GenerateUUID) {
+    uint64_t uuid1 = NodeInfo::genUUID();
+    uint64_t uuid2 = NodeInfo::genUUID();
 
-    res = dht->removePeer("192.168.1.111");
-    EXPECT_EQ(true, res);
-    EXPECT_EQ(0, dht->countHosts());
-    EXPECT_EQ(0, dht->countLookups());
+    // UUID should not be zero
+    EXPECT_NE(uuid1, 0);
+    EXPECT_NE(uuid2, 0);
+
+    // UUIDs should be unique
+    EXPECT_NE(uuid1, uuid2);
 }
 
-TEST_F(DHTTest, TestLocalRemovalOfEmpty) {
-    std::string addr = "127.0.0.1";
-    dht = new DHT(addr);
-    auto result = dht->removePeer("192.168.1.111");
+// Test: genUUID (Statistical test for multiple UUIDs)
+TEST_F(NodeInfoTest, GenerateMultipleUUIDs) {
+    std::set<uint64_t> uuids;
 
-    EXPECT_EQ(0, dht->countHosts());
-    EXPECT_EQ(0, dht->countLookups());
-    EXPECT_EQ(false, result);
+    // Generate 100 UUIDs and ensure they are unique
+    for (int i = 0; i < 100; i++) {
+        uuids.insert(NodeInfo::genUUID());
+    }
+
+    EXPECT_EQ(uuids.size(), 100); // All UUIDs should be unique
 }
 
-TEST_F(DHTTest, TestLocalCreateHostsAndReadAll) {
-    std::string addr = "127.0.0.1";
-    dht = new DHT(addr);
+// Test: Timestamp Accuracy
+TEST_F(NodeInfoTest, TimestampTest) {
+    NodeInfo node1;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Small delay
+    NodeInfo node2;
 
-    dht->addPeer("192.168.1.111");
-    dht->addPeer("192.168.1.112");
-
-    auto allHosts = dht->getPeers();
-
-    EXPECT_EQ(2, allHosts.size());
-
-    auto it = std::find(allHosts.begin(), allHosts.end(), "192.168.1.112");
-    EXPECT_TRUE(it != allHosts.end());
-
-    it = std::find(allHosts.begin(), allHosts.end(), "192.168.1.111");
-    EXPECT_FALSE(it == allHosts.end());
-}
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    // Ensure timestamps are not equal due to delay
+    EXPECT_NE(node1.ts, node2.ts);
 }
