@@ -22,6 +22,37 @@ std::vector<std::string> FServer::getPeers() {
     return peers;
 }
 
+void FServer::initializeNetwork() {    
+    // Create socket
+    auto socketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketFd < 0) {
+        throw std::runtime_error("Failed to create socket");
+    }
+
+    // Set socket options for reuse
+    int opt = 1;
+    setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    // Configure server address
+    struct sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(55555);
+
+    // Bind socket
+    if (bind(socketFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        char* message;
+        asprintf(&message, "Failed to bind socket %d", socketFd);
+        throw std::runtime_error(message);
+    }
+
+    // Start listening
+    if (listen(socketFd, 5) < 0) {
+        throw std::runtime_error("Failed to listen on socket");
+    }
+}
+
+
 bool FServer::removePeer(const std::string& removeNodeAddr) {
     for (auto beg = _lookup.begin(); beg != _lookup.end(); beg++) {
         if (_hosts[*beg]._addr == removeNodeAddr) {

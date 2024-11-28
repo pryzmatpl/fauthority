@@ -1,5 +1,5 @@
-#ifndef P2P_NODE_HPP
-#define P2P_NODE_HPP
+#ifndef FNODE_HPP
+#define FNODE_HPP
 
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
@@ -45,12 +45,14 @@ public:
     FNode& operator=(FNode const&);
     void addPeer(const std::string& peerAddress);
     void connectToPeer(const std::string& peerAddress);
+    vector<string> getPeers();
     string getHostAddr();
     bool cleanup();
     ConnectionResult connectToFAuthority();
     int countPeers();
     bool isClean();
+    void disconnect();
     ~FNode();
 };
 
-#endif // P2P_NODE_HPP
+#endif // FNODE_HPP

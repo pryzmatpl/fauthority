@@ -3,6 +3,9 @@
 #include <cstring>
 #include <stdexcept>
 #include <unistd.h>
+#include <signal.h>
+#include <atomic>
+
 #include "FNode.hpp"
 #include "ArgParser.hpp"
 #include "ConnectionResult.hpp"
@@ -12,7 +15,19 @@
 #include "IncomingRequest.hpp"
 #include "SignedCert.hpp"
 
+// Global run state (Hate on me, haters)
+std::atomic<bool> running{true};
+
+void handleSignalInterrupt(int signal) {
+    if (signal == SIGINT || signal == SIGTERM) {
+        running.store(false);
+    }
+}
+
 int main(int argc, char* argv[]) {
+    signal(SIGINT, handleSignalInterrupt);
+    signal(SIGTERM, handleSignalInterrupt);
+
     try {
         auto parser = ArgParser();
         // Parse command line arguments
@@ -38,10 +53,15 @@ int main(int argc, char* argv[]) {
         std::cout << "Connecting to FAuthority..." << std::endl;
         
         ConnectionResult connectionResult = currNode.connectToFAuthority();
-        
-        while (connectionResult != ConnectionResult::Connected) {
-            std::cout << "Connecting to FAuthority failed. Retrying in 5s" << std::endl;
+
+        const int MAX_RETRIES = 5;
+        int retryCount = 0;
+        while (connectionResult != ConnectionResult::Connected && retryCount < MAX_RETRIES) {
+            std::cout << "Connecting to FAuthority failed. Retry " 
+                      << (retryCount + 1) << "/" << MAX_RETRIES << std::endl;
             sleep(5);
+            connectionResult = currNode.connectToFAuthority();
+            retryCount++;
         }
 
         std::cout << "Connected to FAuthority" << std::endl;
@@ -50,7 +70,8 @@ int main(int argc, char* argv[]) {
         FServer server(currNode);
         FSigner fsigner = FSigner();
 
-        while(true) {
+        while(running.load()) {
+            ListenerStatus listenStatus = server.listen();
             ListenerStatus listenStatus = server.listen();
 
             std::cout << "FListener status: " <<  listenStatus << std::endl;
@@ -72,6 +93,9 @@ int main(int argc, char* argv[]) {
 
             server.refresh();
         }
+
+        server.shutdown();
+        currNode.disconnect();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;

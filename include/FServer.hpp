@@ -34,6 +34,10 @@ public:
     ListenerStatus listen();
     vector<IncomingRequest> acceptIncoming();
     bool refresh();
+    void shutdown();
+
+    void FServer::initializeNetwork();
+    
 };
 
 #endif // DHT_HPP

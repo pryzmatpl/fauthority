@@ -1,99 +1,81 @@
+#include <openssl/evp.h>
+#include <openssl/pem.h>
 #include "FNode.hpp"
 
 void FNode::initializeOpenSSL() {
-    // Initialize OpenSSL
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 }
 
 void FNode::generateKeyPair() {
-    // Generate 2048-bit RSA key pair
-    keyPair = RSA_new();
-    BIGNUM* bne = BN_new();
-    BN_set_word(bne, RSA_F4);
+    EVP_PKEY *pkey = EVP_PKEY_new();
+    RSA *rsa = RSA_new();
+    BIGNUM *e = BN_new();
 
-    RSA_generate_key_ex(keyPair, 2048, bne, nullptr);
-    BN_free(bne);
+    BN_set_word(e, RSA_F4);
 
-    // Save public key to file
-    FILE* pubKeyFile = fopen("public_key.pem", "wb");
-    PEM_write_RSAPublicKey(pubKeyFile, keyPair);
+    // Generate the RSA key
+    if (RSA_generate_key_ex(rsa, 2048, e, NULL) <= 0) {
+        BN_free(e);
+        RSA_free(rsa);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to generate RSA key");
+    }
+
+    if (EVP_PKEY_assign_RSA(pkey, rsa) <= 0) {
+        BN_free(e);
+        RSA_free(rsa); // Frees rsa if assignment fails
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to assign RSA key to EVP_PKEY");
+    }
+
+    BN_free(e);
+
+    FILE *pubKeyFile = fopen("public_key.pem", "wb");
+    if (!PEM_write_PUBKEY(pubKeyFile, pkey)) {
+        fclose(pubKeyFile);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to write public key to file");
+    }
     fclose(pubKeyFile);
 
-    // Save private key to file
-    FILE* privKeyFile = fopen("private_key.pem", "wb");
-    PEM_write_RSAPrivateKey(privKeyFile, keyPair, nullptr, nullptr, 0, nullptr, nullptr);
+    FILE *privKeyFile = fopen("private_key.pem", "wb");
+    if (!PEM_write_PrivateKey(privKeyFile, pkey, NULL, NULL, 0, NULL, NULL)) {
+        fclose(privKeyFile);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to write private key to file");
+    }
     fclose(privKeyFile);
+
+    EVP_PKEY_free(pkey);
 }
 
-void FNode::initializeNetwork() {    
-    // Create socket
-    socketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketFd < 0) {
-        throw std::runtime_error("Failed to create socket");
-    }
-
-    // Set socket options for reuse
-    int opt = 1;
-    setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-    // Configure server address
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(PORT);
-
-    // Bind socket
-    if (bind(socketFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        char* message;
-        asprintf(&message, "Failed to bind socket %d", socketFd);
-        throw std::runtime_error(message);
-    }
-
-    // Start listening
-    if (listen(socketFd, 5) < 0) {
-        throw std::runtime_error("Failed to listen on socket");
-    }
-}
 
 FNode& FNode::operator=(FNode const& rhs) {
-    if (this != &rhs) { 
-        // Clean up current resources
+    if (this != &rhs) {
         cleanup();
 
         try {
-            // Deep copy of keyPair
             if (rhs.keyPair) {
-                // Generate a new RSA key pair and copy the content from rhs.keyPair
-                keyPair = RSA_new();
+                EVP_PKEY *pkey = EVP_PKEY_new();
+                EVP_PKEY_set1_RSA(pkey, rhs.keyPair);
+                keyPair = EVP_PKEY_get1_RSA(pkey);
+                EVP_PKEY_free(pkey);
+                
                 if (!keyPair) {
-                    throw std::runtime_error("Failed to allocate RSA keyPair");
-                }
-
-                // Copy the key components (deep copy)
-                // The specific OpenSSL functions to deep copy key pairs may vary, but generally it involves duplicating the RSA components.
-                if (!RSA_set0_key(keyPair,
-                                 BN_dup(RSA_get0_n(rhs.keyPair)),    // Copy modulus n
-                                 BN_dup(RSA_get0_e(rhs.keyPair)),    // Copy public exponent e
-                                 BN_dup(RSA_get0_d(rhs.keyPair)))) { // Copy private exponent d (if available)
                     throw std::runtime_error("Failed to copy RSA keyPair");
                 }
             }
 
-            // Copy non-pointer members
             peers = rhs.peers;
-            PORT = rhs.PORT;
-
-            // Re-initialize network settings
             initializeNetwork();
         } catch (const std::exception& e) {
             std::cerr << "Copy assignment failed: " << e.what() << std::endl;
             cleanup();
-            throw; // Rethrow to let the caller handle the failure
+            throw;
         }
     }
-
-    return *this; // Return *this to allow chaining of assignment
+    return *this;
 }
 
 
@@ -135,7 +117,7 @@ void FNode::addPeer(const std::string& peerAddress) {
 void FNode::connectToPeer(const std::string& peerAddress) {
     struct sockaddr_in peerAddr;
     peerAddr.sin_family = AF_INET;
-    peerAddr.sin_port = htons(PORT);
+    peerAddr.sin_port = htons(55555);
     inet_pton(AF_INET, peerAddress.c_str(), &peerAddr.sin_addr);
 
     int peerSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -154,19 +136,25 @@ bool FNode::cleanup() {
     try {
         if (keyPair) {
             RSA_free(keyPair);
+            keyPair = nullptr;
         }
         if (socketFd >= 0) {
             shutdown(socketFd, SHUT_RDWR);
             close(socketFd);
+            socketFd = -1;
         }
         EVP_cleanup();
         ERR_free_strings();
-    } catch (std::exception &e) {
-        auto clsName = typeid(FNode).name();
-        std::cerr << clsName << " " << e.what() << "\n";
+    } catch (const std::exception &e) {
+        std::cerr << "Cleanup error: " << e.what() << std::endl;
+        return false;
     }
-
     return true;
+}
+
+vector<string> FNode::getPeers()
+{
+    return peers;
 }
 
 int FNode::countPeers() {
@@ -174,14 +162,7 @@ int FNode::countPeers() {
 }
 
 bool FNode::isClean() {
-    int error_code;
-    socklen_t error_code_size = sizeof(error_code);
-    try {        
-        std::cout << error_code << "\n";
-        return (socketFd == -1);
-    } catch (std::exception &e) {
-        std::cerr << e.what() << "\n";
-    }
+    return (socketFd == -1 && keyPair == nullptr);
 }
 
 string FNode::getHostAddr()
