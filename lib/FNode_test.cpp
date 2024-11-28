@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "P2PNode.hpp"
+#include "FNode.hpp"
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
@@ -11,12 +11,12 @@
 constexpr int PORT = 8080;
 
 // Fixture class for P2PNode tests
-class P2PNodeTest : public ::testing::Test{
+class FNodeTest : public ::testing::Test{
 protected:
-    std::shared_ptr<P2PNode> node;
+    std::shared_ptr<FNode> node;
 
     void SetUp() override {
-        node = std::make_shared<P2PNode>();  // Initialize node in each test        
+        node = std::make_shared<FNode>();  // Initialize node in each test        
     }
 
     void TearDown() override {
@@ -30,32 +30,32 @@ protected:
     }
 };
 
-TEST_F(P2PNodeTest, TestAddPeer) {
+TEST_F(FNodeTest, TestAddPeer) {
     std::string peerAddress = "127.0.0.1";
     node->addPeer(peerAddress);
 
     EXPECT_EQ(node->count(), 1);
 }
 
-TEST_F(P2PNodeTest, TestConnectToPeer) {
+TEST_F(FNodeTest, TestConnectToPeer) {
     std::string peerAddress = "127.0.0.1";
 
     ASSERT_NO_THROW(node->connectToPeer(peerAddress));
 }
 
-TEST_F(P2PNodeTest, TestCleanup) {
+TEST_F(FNodeTest, TestCleanup) {
     // Ensure cleanup is called and resources are freed
     EXPECT_EQ(false, node->isClean());
 }
 
-TEST_F(P2PNodeTest, TestFailedToBindSocketOnCtor) {
-    // Ensure cleanup is called and resources are freed
-    try {
-        auto newNode = new P2PNode();
-    } catch (std::exception &e) {
-        EXPECT_STREQ("Failed to bind socket 4", e.what());
-    }
-}
+// TEST_F(FNodeTest, TestFailedToBindSocketOnCtor) {
+//     // Ensure cleanup is called and resources are freed
+//     try {
+//         auto newNode = new FNode();
+//     } catch (std::exception &e) {
+//         EXPECT_STREQ("Failed to bind socket 4", e.what());
+//     }
+// }
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

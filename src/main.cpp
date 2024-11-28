@@ -3,14 +3,21 @@
 #include <cstring>
 #include <stdexcept>
 #include <unistd.h>
-#include "DHT.hpp"
+#include "FNode.hpp"
 #include "ArgParser.hpp"
+#include "ConnectionResult.hpp"
+#include "FServer.hpp"
+#include "FSigner.hpp"
+#include "ListenerStatus.hpp"
+#include "IncomingRequest.hpp"
+#include "SignedCert.hpp"
 
 int main(int argc, char* argv[]) {
     try {
         auto parser = ArgParser();
         // Parse command line arguments
         std::string hostAddress;
+
         try {
             hostAddress = parser.parseArgs(argc, argv);
         } catch (const std::exception& e) {
@@ -19,55 +26,51 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // Initialize DHT with the provided host address
-        std::cout << "Initializing DHT node at: " << hostAddress << std::endl;
-        DHT dht(hostAddress);
+        std::cout << "Initializing node at: " << hostAddress << std::endl;
 
-        auto currNode = P2PNode();
+        // First, initialize a P2P node, generate certs
+        auto currNode = FNode(hostAddress);
 
         // Print initial DHT state
-        std::cout << "DHT node initialized:" << std::endl;
-        std::cout << "Own Address: " << dht.ownHost() << std::endl;
-        std::cout << "Initial peers: " << dht.countHosts() << std::endl;
-        std::cout << "Initial lookups: " << dht.countLookups() << std::endl;
-        std::cout << "DHT node running. Press Ctrl+C to exit." << std::endl;
+        std::cout << "FAuthority node initialized:" << std::endl;
+        std::cout << "Own Address: " << currNode.getHostAddr() << std::endl;
+        std::cout << "FAuthority node running. Press Ctrl+C to exit." << std::endl;
+        std::cout << "Connecting to FAuthority..." << std::endl;
         
-        while(true) {
-            // Per Heartbeat, update the DHT hosts
-            // Create a listener thread to check for incoming signing requests
-            // Validate whether the cert is signed by peer already, if Not -> Fire off sign request to DHT
-            // If Signing was supposed to happen on this host, wait for return request w/ signed cert and give back
-            // If signing was requested by other host, sign and send back
-            // When cert validation is needed, process the request
-            // DHT must have a cache of certificates? 
-            // Main loop for handling DHT operations
-            // You might want to add periodic tasks here like:
-            // - Refreshing peer list
-            // - Checking peer health
-            // - Processing DHT operations
-            
-            // Print current DHT status every 5 seconds
+        ConnectionResult connectionResult = currNode.connectToFAuthority();
+        
+        while (connectionResult != ConnectionResult::Connected) {
+            std::cout << "Connecting to FAuthority failed. Retrying in 5s" << std::endl;
             sleep(5);
-            std::cout << "Current peers: " << dht.countHosts() 
-                      << ", Lookups: " << dht.countLookups() << std::endl;
-            
-            auto foundPeers = dht.discoverPeers(); //Find p2p nodes
+        }
 
-            for(auto beg=foundPeers.begin(); beg!=foundPeers.end(); beg++){
-                auto peer = (*beg).toBuffer();
-                dht.addPeer(peer); //Rough idea! 
-            }
+        std::cout << "Connected to FAuthority" << std::endl;
+        std::cout << "Initial peers: " << currNode.countPeers() << std::endl;
+        std::cout << "Starting server ..." << std::endl;
+        FServer server(currNode);
+        FSigner fsigner = FSigner();
 
-            bool sentOutToPeer = dht.sendHostP2PNode(currNode); //Reply to pings
+        while(true) {
+            ListenerStatus listenStatus = server.listen();
 
-            // Get and print current peers
-            auto peers = dht.getPeers();
-            if (!peers.empty()) {
-                std::cout << "Connected peers:" << std::endl;
-                for (const auto& peer : peers) {
-                    std::cout << "- " << peer << std::endl;
+            std::cout << "FListener status: " <<  listenStatus << std::endl;
+
+            if (listenStatus == ListenerStatus::Listening) {
+                vector<IncomingRequest> incomingConnections = server.acceptIncoming();
+                
+                vector<SigningRequest> incomingSigningRequests = fsigner.getSigningRequests(incomingConnections);
+
+                for(SigningRequest signingRequest : incomingSigningRequests) {
+                    SigningStatus signingStatus = fsigner.signCertificateFromRequest(signingRequest);
+                    SignedCert signedCert = fsigner.getCertUsingSigningStatus(signingStatus);
+                    signedCert.sendBack();
                 }
             }
+
+            // Wait 5 s
+            sleep(5);
+
+            server.refresh();
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

@@ -6,7 +6,7 @@
 
 class DistCert {
     public:
-        bool signLocal(P2PNode &signer);
+        bool signLocal(FNode &signer);
         bool isValid(DHT &peerNet);
 };
 

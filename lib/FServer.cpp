@@ -1,37 +1,7 @@
-#include "DHT.hpp"
+#include "FServer.hpp"
 
-const uint64_t DHT::NodeInfo::bytesToUint64(const char* bytes) {
-    uint64_t value = 0;
-    for (int i = 0; i < 8; i++) {
-        value = (value << 8) | bytes[i];
-    }
-    return value;
-}
 
-const uint64_t DHT::NodeInfo::genUUID() {
-    static std::random_device randomDev;
-    static std::mt19937 randomNumGen(randomDev());
-    std::uniform_int_distribution<int> dist(0, 15);
-
-    const char* v = "0123456789abcdef";
-    const bool dash[] = {0, 0, 0, 0, true, 0, true, 0, true, 0, true, 0, 0, 0, 0, 0};
-
-    std::string res;
-    for (int i = 0; i < 16; i++) {
-        if (dash[i]) res += "-";
-        res += v[dist(randomNumGen)];
-        res += v[dist(randomNumGen)];
-    }    
-
-    return bytesToUint64(res.c_str());
-}
-
-DHT::NodeInfo::NodeInfo(const std::string& addr)
-    : _addr(addr), _id(genUUID()), _ts(std::chrono::system_clock::now()) {}
-
-DHT::NodeInfo::NodeInfo() {}
-
-DHT::DHT(const std::string& address)
+FServer::FServer(const std::string& address)
     : ownAddress(address), _currentNode(NodeInfo(address)) {}
 
 bool DHT::addPeer(const std::string& addr) {
@@ -42,7 +12,7 @@ bool DHT::addPeer(const std::string& addr) {
     return true;
 }
 
-std::vector<std::string> DHT::getPeers() {
+std::vector<std::string> FServer::getPeers() {
     std::vector<std::string> peers;
     
     for (const auto& host : _hosts) {
@@ -52,7 +22,7 @@ std::vector<std::string> DHT::getPeers() {
     return peers;
 }
 
-bool DHT::removePeer(const std::string& removeNodeAddr) {
+bool FServer::removePeer(const std::string& removeNodeAddr) {
     for (auto beg = _lookup.begin(); beg != _lookup.end(); beg++) {
         if (_hosts[*beg]._addr == removeNodeAddr) {
             _hosts.erase(*beg);
@@ -65,20 +35,20 @@ bool DHT::removePeer(const std::string& removeNodeAddr) {
     return false;
 }
 
-const std::string DHT::ownHost() {
+const std::string FServer::ownHost() {
     return ownAddress;
 }
 
-int DHT::countLookups() {
+int FServer::countLookups() {
     return _lookup.size();
 }
 
-int DHT::countHosts() {
+int FServer::countHosts() {
     return _hosts.size();
 }
 
 /** send out the keypair for current node **/
-bool sendHostP2PNode(P2PNode &node)
+bool FServer::sendHostP2PNode(FNode &node)
 {
     auto sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -120,7 +90,7 @@ bool sendHostP2PNode(P2PNode &node)
     return true;
 }
 
-std::vector<P2PNode> DHT::discoverPeers()
+std::vector<FNode> FServer::discoverPeers()
 {
     auto sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -168,4 +138,9 @@ std::vector<P2PNode> DHT::discoverPeers()
     buffer[received] = '\0';
     
     throw "Return";
+}
+
+ListenerStatus FServer::listen()
+{
+    return ListenerStatus::Unavailable
 }

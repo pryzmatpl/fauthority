@@ -1,12 +1,12 @@
-#include "P2PNode.hpp"
+#include "FNode.hpp"
 
-void P2PNode::initializeOpenSSL() {
+void FNode::initializeOpenSSL() {
     // Initialize OpenSSL
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 }
 
-void P2PNode::generateKeyPair() {
+void FNode::generateKeyPair() {
     // Generate 2048-bit RSA key pair
     keyPair = RSA_new();
     BIGNUM* bne = BN_new();
@@ -26,7 +26,7 @@ void P2PNode::generateKeyPair() {
     fclose(privKeyFile);
 }
 
-void P2PNode::initializeNetwork() {    
+void FNode::initializeNetwork() {    
     // Create socket
     socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (socketFd < 0) {
@@ -56,7 +56,7 @@ void P2PNode::initializeNetwork() {
     }
 }
 
-P2PNode& P2PNode::operator=(P2PNode const& rhs) {
+FNode& FNode::operator=(FNode const& rhs) {
     if (this != &rhs) { 
         // Clean up current resources
         cleanup();
@@ -97,7 +97,7 @@ P2PNode& P2PNode::operator=(P2PNode const& rhs) {
 }
 
 
-P2PNode::P2PNode(P2PNode const& rhs) {
+FNode::FNode(FNode const& rhs) {
     try {
         auto temp = std::move(this);
         *this = std::move(rhs);
@@ -109,8 +109,9 @@ P2PNode::P2PNode(P2PNode const& rhs) {
     }
 }
 
-P2PNode::P2PNode() {
+FNode::FNode(string addr) {
     try {
+        this->address = NodeInfo(addr, 0);
         initializeOpenSSL();
         generateKeyPair();
         initializeNetwork();
@@ -122,12 +123,16 @@ P2PNode::P2PNode() {
     }
 }
 
-void P2PNode::addPeer(const std::string& peerAddress) {
+ConnectionResult FNode::connectToFAuthority() {
+    throw "connectToFAuthority unimplemented";
+}
+
+void FNode::addPeer(const std::string& peerAddress) {
     peers.push_back(peerAddress);
     std::cout << "Added peer: " << peerAddress << std::endl;
 }
 
-void P2PNode::connectToPeer(const std::string& peerAddress) {
+void FNode::connectToPeer(const std::string& peerAddress) {
     struct sockaddr_in peerAddr;
     peerAddr.sin_family = AF_INET;
     peerAddr.sin_port = htons(PORT);
@@ -145,7 +150,7 @@ void P2PNode::connectToPeer(const std::string& peerAddress) {
     close(peerSocket);
 }
 
-bool P2PNode::cleanup() {
+bool FNode::cleanup() {
     try {
         if (keyPair) {
             RSA_free(keyPair);
@@ -157,18 +162,18 @@ bool P2PNode::cleanup() {
         EVP_cleanup();
         ERR_free_strings();
     } catch (std::exception &e) {
-        auto clsName = typeid(P2PNode).name();
+        auto clsName = typeid(FNode).name();
         std::cerr << clsName << " " << e.what() << "\n";
     }
 
     return true;
 }
 
-int P2PNode::count() {
+int FNode::countPeers() {
     return peers.size();
 }
 
-bool P2PNode::isClean() {
+bool FNode::isClean() {
     int error_code;
     socklen_t error_code_size = sizeof(error_code);
     try {        
@@ -179,11 +184,13 @@ bool P2PNode::isClean() {
     }
 }
 
-const char* P2PNode::toBuffer()
+string FNode::getHostAddr()
 {
-    return (const char*)keyPair;
+    return this->address.addr;
 }
 
-P2PNode::~P2PNode() {
+FNode::~FNode() {
     cleanup();
 }
+
+

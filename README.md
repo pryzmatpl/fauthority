@@ -29,3 +29,7 @@ cmake --build ./
 ````
 
 These commands are added to build.sh as in the README.md
+
+## Design
+
+FNode:

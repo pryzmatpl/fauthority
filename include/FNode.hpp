@@ -11,29 +11,46 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <map>
+#include <vector>
+#include <functional>
+#include <cstdint>
+#include <algorithm>
+#include <memory>
+#include <chrono>
+#include <random>
+#include <iostream>
+#include <unordered_map>
+#include "NodeInfo.hpp"
+#include "ConnectionResult.hpp"
+using namespace chrono;
 
-class P2PNode {
+using namespace std;
+
+class FNode {
 private:
+    NodeInfo address;
+
     RSA* keyPair;
     int socketFd;
     std::vector<std::string> peers;
-    int PORT = 8080;
     
     void initializeOpenSSL();
     void generateKeyPair();
     void initializeNetwork();
 
 public:
-    P2PNode();
-    P2PNode(P2PNode const&);
-    P2PNode& operator=(P2PNode const&);
+    FNode(string addr);
+    FNode(FNode const&);
+    FNode& operator=(FNode const&);
     void addPeer(const std::string& peerAddress);
     void connectToPeer(const std::string& peerAddress);
-    const char* P2PNode::toBuffer();
+    string getHostAddr();
     bool cleanup();
-    int count();
+    ConnectionResult connectToFAuthority();
+    int countPeers();
     bool isClean();
-    ~P2PNode();
+    ~FNode();
 };
 
 #endif // P2P_NODE_HPP
