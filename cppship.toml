@@ -1,7 +1,9 @@
 [package]
 name = "fuckauthority"
-version = "0.1.0"
+version = "0.2.0"
 std = 17
 
 [dependencies]
-openssl="3.3.2"
+openssl = "3.3.2"
+libcurl = "8.10.1"  # Adjust version based on your system or needs
+jsoncpp = "1.9.5"    # Adjust version based on your system or needs
