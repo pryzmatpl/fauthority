@@ -18,19 +18,22 @@
 #include "SignedCert.hpp"
 #include "SigningStatus.hpp"
 
-using namespace std;
+class NetworkConsensus;
 
 class FSigner {
-public:
-    
 private:
-
+    const FNode* node = nullptr;
+    NetworkConsensus* consensus = nullptr;
+    SignedCert* lastSignedCert = nullptr;
     
 public:
     FSigner();
-    vector<SigningRequest> getSigningRequests(vector<IncomingRequest> incomingConnections);
-    SigningStatus signCertificateFromRequest(SigningRequest signingRequest);
-    SignedCert getCertUsingSigningStatus(SigningStatus signingStatus);
+    FSigner(const FNode& node);
+    ~FSigner();
+    
+    std::vector<SigningRequest> getSigningRequests(std::vector<IncomingRequest> requests);
+    SigningStatus signCertificateFromRequest(const SigningRequest& request);
+    SignedCert getCertUsingSigningStatus(SigningStatus status);
 };
 
-#endif // FSigner
+#endif // FSIGNER_HPP

@@ -104,7 +104,10 @@ FNode::FNode(string addr) {
 }
 
 ConnectionResult FNode::connectToFAuthority() {
-    throw "connectToFAuthority unimplemented";
+    // Placeholder implementation for connecting to a certificate authority
+    std::cout << "Connecting to FAuthority..." << std::endl;
+    // Simulate a successful connection
+    return ConnectionResult::Connected;
 }
 
 void FNode::addPeer(const std::string& peerAddress) {

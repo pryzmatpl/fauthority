@@ -1,10 +1,12 @@
 #ifndef SIGNING_STATUS_HPP
 #define SIGNING_STATUS_HPP
-enum SigningStatus
-{
+
+enum class SigningStatus {
+    Pending,
     Signed,
-    Unsigned,
-    Error
+    Error,
+    Rejected,
+    NetworkError
 };
 
 #endif // SIGNING_STATUS_HPP
