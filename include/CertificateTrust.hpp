@@ -1,3 +1,5 @@
+#include "Certificate.hpp"
+
 class CertificateTrust {
 public:
     static bool installInSystemStore(const Certificate& cert);

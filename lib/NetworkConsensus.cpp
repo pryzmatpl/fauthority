@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <cstring>
 
-NetworkConsensus::NetworkConsensus(const FNode& n) : node(n) {
+NetworkConsensus::NetworkConsensus(const FNode* n) : node(n) {
     updateActivePeers();
 }
 
@@ -102,5 +102,5 @@ bool NetworkConsensus::requestValidationFromPeer(
 }
 
 void NetworkConsensus::updateActivePeers() {
-    activePeers = node.getPeers();
+    activePeers = node->getPeers();
 } 

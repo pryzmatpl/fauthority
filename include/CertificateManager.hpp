@@ -37,7 +37,7 @@ public:
     bool addCertificate(const Certificate& cert, const std::string& domain, 
                         ValidationMethod method, bool autoRenew = true);
     bool removeCertificate(const std::string& domain);
-    std::vector<ManagedCertificate> getExpiringCertificates(int withinDays = 30) const;
+    std::vector<ManagedCertificate> getExpiringCertificates(int withinDays = 30);
     RenewalStatus renewCertificate(const std::string& domain);
     RenewalStatus renewAllCertificates();
     

@@ -153,7 +153,7 @@ bool FNode::cleanup() {
     return true;
 }
 
-vector<string> FNode::getPeers()
+vector<string> FNode::getPeers() const
 {
     return peers;
 }
@@ -166,7 +166,7 @@ bool FNode::isClean() {
     return (socketFd == -1 && keyPair == nullptr);
 }
 
-string FNode::getHostAddr()
+string FNode::getHostAddr() const
 {
     return this->address.addr;
 }

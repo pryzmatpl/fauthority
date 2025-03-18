@@ -9,7 +9,7 @@ using namespace std;
 
 FServer::FServer() : lookupCount(0) {}
 
-FServer::FServer(const FNode& node) : host(node.getHostAddr()) {
+FServer::FServer(FNode& node) : host(node.getHostAddr()) {
     initializeNetwork();
 }
 

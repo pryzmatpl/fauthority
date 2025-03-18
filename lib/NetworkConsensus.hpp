@@ -14,14 +14,14 @@ enum class ConsensusResult {
 
 class NetworkConsensus {
 public:
-    NetworkConsensus(const FNode& node);
+    NetworkConsensus(const FNode* node);
     
     ConsensusResult validateRequest(const SigningRequest& request);
     int getMinimumValidationsRequired() const;
     bool hasMinimumPeers() const;
     
 private:
-    const FNode& node;
+    const FNode* node;
     std::vector<std::string> activePeers;
     
     bool requestValidationFromPeer(const std::string& peerAddress, 

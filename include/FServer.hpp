@@ -28,10 +28,11 @@ private:
     std::vector<std::string> peers; // List of peers
     int lookupCount = 0;            // Mock lookup counter
     string host;
+    int socketFd;
 
 public:
     FServer();
-    FServer(const FNode& node);
+    FServer(FNode& node);
     FServer(const string& address);
 
     ListenerStatus listenFAuth();

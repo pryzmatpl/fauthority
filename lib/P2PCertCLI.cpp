@@ -205,7 +205,7 @@ int P2PCertCLI::cmdRequest(const std::vector<std::string>& args) {
     
     // Sign certificate with P2P network
     std::cout << "Requesting certificate signing from P2P network..." << std::endl;
-    FSigner signer(*node);
+    FSigner signer(node);
     
     // In a real implementation, this would create a proper SigningRequest
     SigningRequest signingReq;

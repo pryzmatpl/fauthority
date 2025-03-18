@@ -12,7 +12,7 @@ FSigner::FSigner() {
 }
 
 // Constructor with node reference
-FSigner::FSigner(const FNode& node) : node(node), consensus(new NetworkConsensus(node)) {
+FSigner::FSigner(const FNode* node) : node(node), consensus(new NetworkConsensus(node)) {
     std::cout << "FSigner created with node reference." << std::endl;
 }
 

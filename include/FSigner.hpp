@@ -28,7 +28,7 @@ private:
     
 public:
     FSigner();
-    FSigner(const FNode& node);
+    FSigner(const FNode* node);
     ~FSigner();
     
     std::vector<SigningRequest> getSigningRequests(std::vector<IncomingRequest> requests);

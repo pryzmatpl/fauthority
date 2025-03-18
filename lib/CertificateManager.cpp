@@ -40,7 +40,7 @@ bool CertificateManager::removeCertificate(const std::string& domain) {
     return false;
 }
 
-std::vector<ManagedCertificate> CertificateManager::getExpiringCertificates(int withinDays) const {
+std::vector<ManagedCertificate> CertificateManager::getExpiringCertificates(int withinDays) {
     std::vector<ManagedCertificate> expiringCerts;
     auto now = std::chrono::system_clock::now();
     auto threshold = now + std::chrono::hours(24 * withinDays);

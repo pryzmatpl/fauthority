@@ -43,8 +43,8 @@ public:
     FNode& operator=(FNode const&);
     void addPeer(const std::string& peerAddress);
     void connectToPeer(const std::string& peerAddress);
-    vector<string> getPeers();
-    string getHostAddr();
+    vector<string> getPeers() const;
+    string getHostAddr() const;
     bool cleanup();
     ConnectionResult connectToFAuthority();
     int countPeers();
