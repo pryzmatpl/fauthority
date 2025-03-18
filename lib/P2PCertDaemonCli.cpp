@@ -618,13 +618,10 @@ bool P2PCertDaemonCli::initializeNode() {
     }
     
     // Create a new node
-    node = new FNode(nodeAddr, nodePort);
-    
-    // Set node ID
-    node->setNodeId(nodeId);
-    
+    node = new FNode(nodeAddr);
+        
     // Create a signer
-    signer = new FSigner(*node);
+    signer = new FSigner(node);
     
     return true;
 }
