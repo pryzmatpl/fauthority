@@ -56,6 +56,19 @@ private:
     WebServerType parseWebServerType(const std::string& serverType);
     TrustStrategy parseTrustStrategy(const std::string& strategy);
     void displayCertificateInfo(const Certificate& cert);
+    
+    // New P2P-specific methods and properties
+    std::string p2pNodeAddress;
+    int p2pNodePort;
+    
+    // Connect to P2P network
+    bool connectToP2PNode(const std::string& nodeAddr);
+    bool disconnectFromP2PNode();
+    
+    // P2P certificate operations
+    bool submitCertificateToP2PNetwork(const Certificate& cert);
+    bool renewCertificateViaP2P(const std::string& domain);
+    bool verifyCertificateWithP2P(const Certificate& cert);
 };
 
 #endif // P2P_CERT_CLI_HPP 

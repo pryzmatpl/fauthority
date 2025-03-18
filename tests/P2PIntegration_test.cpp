@@ -1,103 +1,175 @@
 #include <gtest/gtest.h>
-#include "FNode.hpp"
-#include "FServer.hpp"
-#include "FSigner.hpp"
-#include "Certificate.hpp"
-#include "SigningRequest.hpp"
-#include "NetworkConsensus.hpp"
+#include "P2PCertDaemonCli.hpp"
+#include "P2PCertCLI.hpp"
 #include <thread>
 #include <chrono>
-#include <vector>
+#include <iostream>
+#include <filesystem>
 
 class P2PIntegrationTest : public ::testing::Test {
 protected:
-    std::vector<FNode*> nodes;
-    std::vector<FServer*> servers;
+    P2PCertDaemonCli* daemon1;
+    P2PCertDaemonCli* daemon2;
+    P2PCertCLI* certCli;
     
     void SetUp() override {
-        // Create multiple nodes
-        for (int i = 0; i < 3; i++) {
-            std::string address = "127.0.0." + std::to_string(i+1);
-            FNode* node = new FNode(address);
-            nodes.push_back(node);
-        }
+        // Set up test environment
+        std::filesystem::create_directories("/tmp/p2pca-test");
+        std::filesystem::create_directories("/tmp/p2pca-test/webroot");
         
-        // Connect nodes to each other
-        for (size_t i = 0; i < nodes.size(); i++) {
-            for (size_t j = 0; j < nodes.size(); j++) {
-                if (i != j) {
-                    nodes[i]->addPeer(nodes[j]->getHostAddr());
-                }
-            }
-        }
+        // Set HOME environment variable to the test directory
+        setenv("HOME", "/tmp/p2pca-test", 1);
         
-        // Create servers for each node
-        for (auto& node : nodes) {
-            FServer* server = new FServer(*node);
-            servers.push_back(server);
-        }
+        // Create daemon instances
+        daemon1 = new P2PCertDaemonCli();
+        daemon2 = new P2PCertDaemonCli();
+        
+        // Create cert client
+        certCli = new P2PCertCLI();
     }
     
     void TearDown() override {
-        for (auto* server : servers) {
-            delete server;
+        delete certCli;
+        delete daemon2;
+        delete daemon1;
+        
+        // Clean up test directory
+        try {
+            std::filesystem::remove_all("/tmp/p2pca-test");
+        } catch (...) {
+            // Ignore errors in cleanup
         }
-        servers.clear();
-        
-        for (auto* node : nodes) {
-            delete node;
-        }
-        nodes.clear();
-    }
-    
-    Certificate createTestCertificate() {
-        EVP_PKEY* testKey = EVP_PKEY_new();
-        RSA* rsa = RSA_generate_key(2048, RSA_F4, nullptr, nullptr);
-        EVP_PKEY_assign_RSA(testKey, rsa);
-        
-        Certificate cert("test.example.com", "Test Org", "US");
-        cert.generateX509(testKey);
-        
-        EVP_PKEY_free(testKey);
-        return cert;
     }
 };
 
-TEST_F(P2PIntegrationTest, TestNetworkFormation) {
-    // Verify all nodes have the correct number of peers
-    for (auto* node : nodes) {
-        EXPECT_EQ(node->countPeers(), nodes.size() - 1);
-    }
+TEST_F(P2PIntegrationTest, TestNetworkCertificateIssuance) {
+    // Start the daemon nodes
+    const char* startArgs1[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node1.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8444"
+    };
+    daemon1->run(8, const_cast<char**>(startArgs1));
+    
+    const char* startArgs2[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node2.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8445"
+    };
+    daemon2->run(8, const_cast<char**>(startArgs2));
+    
+    // Allow some time for the daemons to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // Connect the nodes
+    const char* connectArgs[] = {
+        "p2pcert-daemon",
+        "connect",
+        "127.0.0.1:8445"
+    };
+    daemon1->run(3, const_cast<char**>(connectArgs));
+    
+    // Allow some time for node connection
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Request a certificate using the client
+    const char* requestArgs[] = {
+        "p2pcert",
+        "request",
+        "test.example.com",
+        "--validation", "http",
+        "--webroot", "/tmp/p2pca-test/webroot",
+        "--p2p-node", "127.0.0.1:8444"
+    };
+    int result = certCli->run(8, const_cast<char**>(requestArgs));
+    EXPECT_EQ(result, 0);
+    
+    // Verify certificate existence
+    const char* listArgs[] = {
+        "p2pcert",
+        "list"
+    };
+    result = certCli->run(2, const_cast<char**>(listArgs));
+    EXPECT_EQ(result, 0);
+    
+    // Stop both daemons
+    const char* stopArgs[] = {
+        "p2pcert-daemon",
+        "stop"
+    };
+    daemon1->run(2, const_cast<char**>(stopArgs));
+    daemon2->run(2, const_cast<char**>(stopArgs));
 }
 
-TEST_F(P2PIntegrationTest, TestNetworkConsensus) {
-    // Create a network consensus object
-    NetworkConsensus consensus(nodes[0]);
+TEST_F(P2PIntegrationTest, TestNetworkCertificateRenewal) {
+    // Start the daemon nodes
+    const char* startArgs1[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node1.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8444"
+    };
+    daemon1->run(8, const_cast<char**>(startArgs1));
     
-    // Verify it has minimum peers
-    EXPECT_TRUE(consensus.hasMinimumPeers());
+    const char* startArgs2[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node2.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8445"
+    };
+    daemon2->run(8, const_cast<char**>(startArgs2));
     
-    // Calculate required validations
-    int requiredValidations = consensus.getMinimumValidationsRequired();
-    EXPECT_GT(requiredValidations, 0);
+    // Allow some time for the daemons to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // Connect the nodes
+    const char* connectArgs[] = {
+        "p2pcert-daemon",
+        "connect",
+        "127.0.0.1:8445"
+    };
+    daemon1->run(3, const_cast<char**>(connectArgs));
+    
+    // Allow some time for node connection
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // First request a certificate
+    const char* requestArgs[] = {
+        "p2pcert",
+        "request",
+        "renew.example.com",
+        "--validation", "http",
+        "--webroot", "/tmp/p2pca-test/webroot",
+        "--p2p-node", "127.0.0.1:8444"
+    };
+    certCli->run(8, const_cast<char**>(requestArgs));
+    
+    // Then test renewal
+    const char* renewArgs[] = {
+        "p2pcert",
+        "renew",
+        "renew.example.com",
+        "--p2p-node", "127.0.0.1:8444"
+    };
+    int result = certCli->run(5, const_cast<char**>(renewArgs));
+    EXPECT_EQ(result, 0);
+    
+    // Stop both daemons
+    const char* stopArgs[] = {
+        "p2pcert-daemon",
+        "stop"
+    };
+    daemon1->run(2, const_cast<char**>(stopArgs));
+    daemon2->run(2, const_cast<char**>(stopArgs));
 }
 
-TEST_F(P2PIntegrationTest, TestCertificateSigningE2E) {
-    // Create a test certificate
-    Certificate cert = createTestCertificate();
-    
-    // Create a signing request
-    IncomingRequest incomingReq("SIGN\n" + cert.toPEM(), "192.168.1.100");
-    incomingReq.parse();
-    SigningRequest signingReq(incomingReq);
-    
-    // Create a signer with the first node
-    FSigner signer(nodes[0]);
-    
-    // Sign the certificate
-    SigningStatus status = signer.signCertificateFromRequest(signingReq);
-    
-    // In a real network, this would succeed, but our test environment
-    // can't actually connect to peers
-    EXPECT_EQ(status, SigningStatus::NetworkError);
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 } 

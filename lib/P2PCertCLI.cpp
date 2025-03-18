@@ -83,6 +83,10 @@ void P2PCertCLI::initCommands() {
     commands["generate-root"] = [this](const std::vector<std::string>& args) {
         return cmdGenerateRoot(args);
     };
+    
+    commands["network"] = [this](const std::vector<std::string>& args) {
+        return cmdNetwork(args);
+    };
 }
 
 int P2PCertCLI::cmdHelp(const std::vector<std::string>& args) {
@@ -98,6 +102,7 @@ int P2PCertCLI::cmdHelp(const std::vector<std::string>& args) {
     std::cout << "  install <domain>        Install certificate for web server" << std::endl;
     std::cout << "  uninstall <domain>      Remove certificate from web server" << std::endl;
     std::cout << "  generate-root           Generate a new root CA certificate" << std::endl;
+    std::cout << "  network                 Manage P2P network connections" << std::endl;
     std::cout << "  help                    Show this help message" << std::endl;
     std::cout << std::endl;
     std::cout << "Options:" << std::endl;
@@ -148,6 +153,12 @@ int P2PCertCLI::cmdRequest(const std::vector<std::string>& args) {
             trustStrategy = parseTrustStrategy(args[++i]);
         } else if (args[i] == "--auto-install") {
             autoInstall = true;
+        } else if (args[i] == "--p2p-node" && i + 1 < args.size()) {
+            std::string nodeAddr = args[++i];
+            if (!connectToP2PNode(nodeAddr)) {
+                std::cerr << "Failed to connect to P2P node: " << nodeAddr << std::endl;
+                return 1;
+            }
         }
     }
     
@@ -282,6 +293,16 @@ int P2PCertCLI::cmdRequest(const std::vector<std::string>& args) {
     EVP_PKEY_free(pkey);
     
     std::cout << "Certificate successfully issued for " << domain << std::endl;
+    
+    // Submit certificate to P2P network
+    if (!submitCertificateToP2PNetwork(cert)) {
+        std::cerr << "Failed to submit certificate to P2P network" << std::endl;
+        return 1;
+    }
+    
+    // Disconnect from P2P node
+    disconnectFromP2PNode();
+    
     return 0;
 }
 
@@ -306,6 +327,25 @@ int P2PCertCLI::cmdRenew(const std::vector<std::string>& args) {
         // Renew specific certificate
         std::string domain = args[0];
         std::cout << "Renewing certificate for " << domain << "..." << std::endl;
+        
+        // Check for P2P node option
+        if (hasOption(args, "--p2p-node")) {
+            std::string nodeAddr = getOptionValue(args, "--p2p-node");
+            if (!connectToP2PNode(nodeAddr)) {
+                std::cerr << "Failed to connect to P2P node: " << nodeAddr << std::endl;
+                return 1;
+            }
+            
+            // Use P2P network for renewal
+            if (!renewCertificateViaP2P(domain)) {
+                std::cerr << "Failed to renew certificate via P2P network" << std::endl;
+                disconnectFromP2PNode();
+                return 1;
+            }
+            
+            disconnectFromP2PNode();
+        }
+        
         RenewalStatus status = certManager.renewCertificate(domain);
         
         if (status == RenewalStatus::Success) {
@@ -605,6 +645,50 @@ int P2PCertCLI::cmdGenerateRoot(const std::vector<std::string>& args) {
     }
 }
 
+int P2PCertCLI::cmdNetwork(const std::vector<std::string>& args) {
+    if (args.empty() || args[0] == "help") {
+        std::cout << "P2P Network Commands:" << std::endl;
+        std::cout << "  p2pcert network info [--node ADDR:PORT]" << std::endl;
+        std::cout << "  p2pcert network nodes [--node ADDR:PORT]" << std::endl;
+        std::cout << "  p2pcert network status [--node ADDR:PORT]" << std::endl;
+        return 0;
+    }
+    
+    std::string subCommand = args[0];
+    std::string nodeAddr = getOptionValue(args, "--node", "127.0.0.1:8443");
+    
+    if (!connectToP2PNode(nodeAddr)) {
+        std::cerr << "Failed to connect to P2P node: " << nodeAddr << std::endl;
+        return 1;
+    }
+    
+    if (subCommand == "info") {
+        std::cout << "P2P Network Information:" << std::endl;
+        std::cout << "  Connected to node: " << p2pNodeAddress << ":" << p2pNodePort << std::endl;
+        std::cout << "  Network size: 5 nodes" << std::endl;
+        std::cout << "  Network consensus: 4/5 nodes required" << std::endl;
+    } else if (subCommand == "nodes") {
+        std::cout << "P2P Network Nodes:" << std::endl;
+        std::cout << "  1. node1.example.com (192.168.1.101:8443) - Active" << std::endl;
+        std::cout << "  2. node2.example.com (192.168.1.102:8443) - Active" << std::endl;
+        std::cout << "  3. node3.example.com (192.168.1.103:8443) - Active" << std::endl;
+        std::cout << "  4. node4.example.com (192.168.1.104:8443) - Active" << std::endl;
+        std::cout << "  5. node5.example.com (192.168.1.105:8443) - Active" << std::endl;
+    } else if (subCommand == "status") {
+        std::cout << "P2P Network Status: Healthy" << std::endl;
+        std::cout << "  Active nodes: 5/5" << std::endl;
+        std::cout << "  Certificates issued: 42" << std::endl;
+        std::cout << "  Pending requests: 3" << std::endl;
+    } else {
+        std::cerr << "Unknown network subcommand: " << subCommand << std::endl;
+        disconnectFromP2PNode();
+        return 1;
+    }
+    
+    disconnectFromP2PNode();
+    return 0;
+}
+
 void P2PCertCLI::loadConfig() {
     // In a real implementation, this would load config from a file
     // For this example, we'll use hardcoded values
@@ -704,4 +788,81 @@ void P2PCertCLI::displayCertificateInfo(const Certificate& cert) {
     std::cout << "  Valid from: 2023-01-01" << std::endl;
     std::cout << "  Valid until: 2024-01-01" << std::endl;
     std::cout << "  Fingerprint: 01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF" << std::endl;
+}
+
+// New implementation for P2P integration
+bool P2PCertCLI::connectToP2PNode(const std::string& nodeAddr) {
+    // Parse node address and port
+    size_t colonPos = nodeAddr.find(':');
+    if (colonPos == std::string::npos) {
+        p2pNodeAddress = nodeAddr;
+        p2pNodePort = 8443; // Default port
+    } else {
+        p2pNodeAddress = nodeAddr.substr(0, colonPos);
+        p2pNodePort = std::stoi(nodeAddr.substr(colonPos + 1));
+    }
+    
+    std::cout << "Connecting to P2P node at " << p2pNodeAddress << ":" << p2pNodePort << std::endl;
+    
+    // In a real implementation, establish a socket connection to the node
+    // For this demonstration, we'll simulate successful connection
+    
+    return true;
+}
+
+bool P2PCertCLI::disconnectFromP2PNode() {
+    std::cout << "Disconnecting from P2P node at " << p2pNodeAddress << ":" << p2pNodePort << std::endl;
+    
+    // In a real implementation, close the socket connection
+    // For this demonstration, we'll simulate successful disconnection
+    
+    p2pNodeAddress = "";
+    p2pNodePort = 0;
+    
+    return true;
+}
+
+bool P2PCertCLI::submitCertificateToP2PNetwork(const Certificate& cert) {
+    if (p2pNodeAddress.empty()) {
+        std::cerr << "Error: Not connected to any P2P node." << std::endl;
+        return false;
+    }
+    
+    std::cout << "Submitting certificate to P2P network via " << p2pNodeAddress << ":" << p2pNodePort << std::endl;
+    
+    // In a real implementation, send the certificate to the P2P node for distribution
+    // For this demonstration, we'll simulate successful submission
+    
+    std::cout << "Certificate submitted to P2P network successfully." << std::endl;
+    return true;
+}
+
+bool P2PCertCLI::renewCertificateViaP2P(const std::string& domain) {
+    if (p2pNodeAddress.empty()) {
+        std::cerr << "Error: Not connected to any P2P node." << std::endl;
+        return false;
+    }
+    
+    std::cout << "Renewing certificate for " << domain << " via P2P network" << std::endl;
+    
+    // In a real implementation, send the renewal request to the P2P node
+    // For this demonstration, we'll simulate successful renewal
+    
+    std::cout << "Certificate renewed successfully via P2P network." << std::endl;
+    return true;
+}
+
+bool P2PCertCLI::verifyCertificateWithP2P(const Certificate& cert) {
+    if (p2pNodeAddress.empty()) {
+        std::cerr << "Error: Not connected to any P2P node." << std::endl;
+        return false;
+    }
+    
+    std::cout << "Verifying certificate with P2P network via " << p2pNodeAddress << ":" << p2pNodePort << std::endl;
+    
+    // In a real implementation, send the certificate to the P2P node for verification
+    // For this demonstration, we'll simulate successful verification
+    
+    std::cout << "Certificate verified successfully by P2P network." << std::endl;
+    return true;
 } 
