@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 #include "FNode.hpp"
 #include "ArgParser.hpp"
@@ -15,7 +17,7 @@
 #include "IncomingRequest.hpp"
 #include "SignedCert.hpp"
 
-// Global run state (Hate on me, haters)
+// Global run state
 std::atomic<bool> running{true};
 
 void handleSignalInterrupt(int signal) {
@@ -24,72 +26,64 @@ void handleSignalInterrupt(int signal) {
     }
 }
 
+void connectToFAuthority(FNode& currNode) {
+    const int MAX_RETRIES = 5;
+    int retryCount = 0;
+    ConnectionResult connectionResult;
+
+    do {
+        connectionResult = currNode.connectToFAuthority();
+        if (connectionResult != ConnectionResult::Connected) {
+            std::cout << "Connecting to FAuthority failed. Retry " 
+                      << (retryCount + 1) << "/" << MAX_RETRIES << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            retryCount++;
+        }
+    } while (connectionResult != ConnectionResult::Connected && retryCount < MAX_RETRIES);
+
+    if (connectionResult != ConnectionResult::Connected) {
+        throw std::runtime_error("Failed to connect to FAuthority after multiple attempts.");
+    }
+}
+
 int main(int argc, char* argv[]) {
     signal(SIGINT, handleSignalInterrupt);
     signal(SIGTERM, handleSignalInterrupt);
 
     try {
-        auto parser = ArgParser();
-        // Parse command line arguments
-        std::string hostAddress;
-
-        try {
-            hostAddress = parser.parseArgs(argc, argv);
-        } catch (const std::exception& e) {
-            parser.printUsage(argv[0]);
-            std::cerr << "Error: " << e.what() << std::endl;
-            return 1;
-        }
+        ArgParser parser;
+        std::string hostAddress = parser.parseArgs(argc, argv);
 
         std::cout << "Initializing node at: " << hostAddress << std::endl;
 
-        // First, initialize a P2P node, generate certs
-        auto currNode = FNode(hostAddress);
-
-        // Print initial DHT state
+        // Initialize a P2P node, generate certs
+        FNode currNode(hostAddress);
         std::cout << "FAuthority node initialized:" << std::endl;
         std::cout << "Own Address: " << currNode.getHostAddr() << std::endl;
-        std::cout << "FAuthority node running. Press Ctrl+C to exit." << std::endl;
-        std::cout << "Connecting to FAuthority..." << std::endl;
-        
-        ConnectionResult connectionResult = currNode.connectToFAuthority();
 
-        const int MAX_RETRIES = 5;
-        int retryCount = 0;
-        while (connectionResult != ConnectionResult::Connected && retryCount < MAX_RETRIES) {
-            std::cout << "Connecting to FAuthority failed. Retry " 
-                      << (retryCount + 1) << "/" << MAX_RETRIES << std::endl;
-            sleep(5);
-            connectionResult = currNode.connectToFAuthority();
-            retryCount++;
-        }
-
+        connectToFAuthority(currNode);
         std::cout << "Connected to FAuthority" << std::endl;
         std::cout << "Initial peers: " << currNode.countPeers() << std::endl;
-        std::cout << "Starting server ..." << std::endl;
+
         FServer server(currNode);
-        FSigner fsigner = FSigner();
+        FSigner fsigner;
 
-        while(running.load()) {
+        while (running.load()) {
             ListenerStatus listenStatus = server.listenFAuth();
-
-            std::cout << "FListener status: " <<  listenStatus << std::endl;
+            std::cout << "FListener status: " << listenStatus << std::endl;
 
             if (listenStatus == ListenerStatus::Listening) {
-                vector<IncomingRequest> incomingConnections = server.acceptIncoming();
-                
-                vector<SigningRequest> incomingSigningRequests = fsigner.getSigningRequests(incomingConnections);
+                auto incomingConnections = server.acceptIncoming();
+                auto incomingSigningRequests = fsigner.getSigningRequests(incomingConnections);
 
-                for(SigningRequest signingRequest : incomingSigningRequests) {
+                for (const auto& signingRequest : incomingSigningRequests) {
                     SigningStatus signingStatus = fsigner.signCertificateFromRequest(signingRequest);
                     SignedCert signedCert = fsigner.getCertUsingSigningStatus(signingStatus);
                     signedCert.sendBack();
                 }
             }
 
-            // Wait 5 s
-            sleep(5);
-
+            std::this_thread::sleep_for(std::chrono::seconds(5));
             server.refresh();
         }
 

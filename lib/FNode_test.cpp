@@ -2,6 +2,7 @@
 #include "FNode.hpp"
 #include <fstream>
 #include <memory>
+#include "ConnectionResult.hpp"
 
 // Fixture class for FNode tests
 class FNodeTest : public ::testing::Test {
@@ -97,4 +98,19 @@ TEST_F(FNodeTest, TestFailedToBindSocketOnCtor) {
     } catch (const std::exception& e) {
         EXPECT_STREQ("Failed to bind socket", e.what());
     }
+}
+
+TEST(FNodeTest, TestConnectToFAuthority) {
+    FNode node("127.0.0.1");
+    EXPECT_NO_THROW({
+        ConnectionResult result = node.connectToFAuthority();
+        EXPECT_EQ(result, ConnectionResult::Connected);
+    });
+}
+
+TEST(FNodeTest, TestAddPeer) {
+    FNode node("127.0.0.1");
+    node.addPeer("192.168.0.2");
+    EXPECT_EQ(node.countPeers(), 1);
+    EXPECT_EQ(node.getPeers().front(), "192.168.0.2");
 }
