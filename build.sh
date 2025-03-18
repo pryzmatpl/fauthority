@@ -34,6 +34,10 @@ echo "sed openssl:"
 platform_sed 's/module-OpenSSL/OpenSSL/' ./build/CMakeLists.txt
 platform_sed 's/target_link_libraries(fuckauthority_deps INTERFACE openssl::openssl)/target_link_libraries(fuckauthority_deps INTERFACE OpenSSL::SSL OpenSSL::Crypto)/' ./build/CMakeLists.txt
 
+echo "sed jsoncpp:"
+platform_sed 's/find_package(jsoncpp REQUIRED)/find_package(PkgConfig REQUIRED)\npkg_check_modules(JSONCPP REQUIRED jsoncpp)\ninclude_directories(${JSONCPP_INCLUDE_DIRS})/' ./build/CMakeLists.txt
+platform_sed 's/target_link_libraries(fuckauthority_deps INTERFACE JsonCpp::JsonCpp)/target_link_libraries(fuckauthority_deps INTERFACE jsoncpp)/' ./build/CMakeLists.txt
+
 echo "cmake:"
 cd ./build && cmake ./ || { echo "CMake configuration failed."; exit 1; }
 
