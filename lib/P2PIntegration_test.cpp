@@ -72,7 +72,7 @@ TEST_F(P2PIntegrationTest, TestNetworkFormation) {
 
 TEST_F(P2PIntegrationTest, TestNetworkConsensus) {
     // Create a network consensus object
-    NetworkConsensus consensus(*nodes[0]);
+    NetworkConsensus consensus(nodes[0]);
     
     // Verify it has minimum peers
     EXPECT_TRUE(consensus.hasMinimumPeers());
@@ -92,7 +92,7 @@ TEST_F(P2PIntegrationTest, TestCertificateSigningE2E) {
     SigningRequest signingReq(incomingReq);
     
     // Create a signer with the first node
-    FSigner signer(*nodes[0]);
+    FSigner signer(nodes[0]);
     
     // Sign the certificate
     SigningStatus status = signer.signCertificateFromRequest(signingReq);

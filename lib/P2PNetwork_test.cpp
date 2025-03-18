@@ -22,6 +22,19 @@ protected:
         delete server;
         delete signer;
     }
+
+    void createDummyPrivateKey() {
+        RSA* rsa = RSA_generate_key(2048, RSA_F4, nullptr, nullptr);
+        FILE* privateKeyFile = fopen("private_key.pem", "wb");
+        PEM_write_RSAPrivateKey(privateKeyFile, rsa, nullptr, nullptr, 0, nullptr, nullptr);
+        fclose(privateKeyFile);
+        RSA_free(rsa);
+    }
+
+    // Helper function to remove the dummy private key after tests
+    void removeDummyPrivateKey() {
+        std::remove("private_key.pem");
+    }
 };
 
 TEST_F(P2PNetworkTest, TestNodeConnectionToAuthority) {

@@ -10,7 +10,7 @@ protected:
     
     void SetUp() override {
         node = new FNode("127.0.0.1");
-        consensus = new NetworkConsensus(*node);
+        consensus = new NetworkConsensus(node);
     }
     
     void TearDown() override {
@@ -26,25 +26,25 @@ TEST_F(NetworkConsensusTest, TestNoPeers) {
 TEST_F(NetworkConsensusTest, TestWithPeers) {
     node->addPeer("192.168.1.1");
     // Force update of active peers in consensus
-    consensus = new NetworkConsensus(*node);
+    consensus = new NetworkConsensus(node);
     EXPECT_TRUE(consensus->hasMinimumPeers());
 }
 
 TEST_F(NetworkConsensusTest, TestMinimumValidations) {
     // Test with 1 peer
     node->addPeer("192.168.1.1");
-    consensus = new NetworkConsensus(*node);
+    consensus = new NetworkConsensus(node);
     EXPECT_EQ(consensus->getMinimumValidationsRequired(), 1);
     
     // Test with 3 peers
     node->addPeer("192.168.1.2");
     node->addPeer("192.168.1.3");
-    consensus = new NetworkConsensus(*node);
+    consensus = new NetworkConsensus(node);
     EXPECT_EQ(consensus->getMinimumValidationsRequired(), 1);
     
     // Test with 5 peers
     node->addPeer("192.168.1.4");
     node->addPeer("192.168.1.5");
-    consensus = new NetworkConsensus(*node);
+    consensus = new NetworkConsensus(node);
     EXPECT_EQ(consensus->getMinimumValidationsRequired(), 2);
 } 

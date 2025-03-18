@@ -78,7 +78,7 @@ TEST_F(CertbotReplacementTest, TestEndToEndFlow) {
     // Step 4: Request certificate signing from P2P network
     std::cout << "Step 4: Certificate Signing Request" << std::endl;
     // Create a signer for testing purposes
-    FSigner signer(*node);
+    FSigner signer(node);
     // In a real implementation, this would use actual SigningRequest
     // For testing, we'll simulate network consensus and signing
     SigningStatus signStatus = signer.signCertificateFromRequest(SigningRequest());

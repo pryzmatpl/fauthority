@@ -31,7 +31,7 @@ TEST_F(FNodeTest, TestInitialization) {
     EXPECT_TRUE(fileExists("private_key.pem"));
 }
 
-TEST_F(FNodeTest, TestAddPeer) {
+TEST_F(FNodeTest, TestAddPeerMore) {
     std::string peerAddress = "192.168.0.2";
     node->addPeer(peerAddress);
 
