@@ -31,7 +31,19 @@ void FNode::generateKeyPair() {
 
     BN_free(e);
 
+    // Save our key pair
+    keyPair = RSA_dup(rsa);
+    if (!keyPair) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to store RSA key pair");
+    }
+
     FILE *pubKeyFile = fopen("public_key.pem", "wb");
+    if (!pubKeyFile) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to open public key file for writing");
+    }
+    
     if (!PEM_write_PUBKEY(pubKeyFile, pkey)) {
         fclose(pubKeyFile);
         EVP_PKEY_free(pkey);
@@ -40,6 +52,11 @@ void FNode::generateKeyPair() {
     fclose(pubKeyFile);
 
     FILE *privKeyFile = fopen("private_key.pem", "wb");
+    if (!privKeyFile) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to open private key file for writing");
+    }
+    
     if (!PEM_write_PrivateKey(privKeyFile, pkey, NULL, NULL, 0, NULL, NULL)) {
         fclose(privKeyFile);
         EVP_PKEY_free(pkey);

@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cmath>
 
-NetworkConsensus::NetworkConsensus(const FNode* n) : node(n) {
+NetworkConsensus::NetworkConsensus(const FNode* n, int port) : node(n), peerPort(port) {
     updateActivePeers();
 }
 
@@ -70,7 +70,7 @@ bool NetworkConsensus::requestValidationFromPeer(
     // Set up the peer address
     struct sockaddr_in peerAddr;
     peerAddr.sin_family = AF_INET;
-    peerAddr.sin_port = htons(55555); // Use same port as server
+    peerAddr.sin_port = htons(peerPort); // Use configurable port
     
     if (inet_pton(AF_INET, peerAddress.c_str(), &peerAddr.sin_addr) <= 0) {
         std::cerr << "Invalid peer address: " << peerAddress << std::endl;

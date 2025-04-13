@@ -169,6 +169,126 @@ TEST_F(P2PIntegrationTest, TestNetworkCertificateRenewal) {
     daemon2->run(2, const_cast<char**>(stopArgs));
 }
 
+TEST_F(P2PIntegrationTest, TestCompleteCertificateLifecycle) {
+    // Start a small network of 3 nodes
+    const char* startArgs1[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node1.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8444"
+    };
+    daemon1->run(8, const_cast<char**>(startArgs1));
+    
+    const char* startArgs2[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node2.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8445"
+    };
+    daemon2->run(8, const_cast<char**>(startArgs2));
+    
+    // Create a third daemon just for this test
+    P2PCertDaemonCli daemon3;
+    const char* startArgs3[] = {
+        "p2pcert-daemon",
+        "start",
+        "--node-id", "node3.example.com",
+        "--addr", "127.0.0.1",
+        "--port", "8446"
+    };
+    daemon3.run(8, const_cast<char**>(startArgs3));
+    
+    // Allow some time for the daemons to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // Connect all nodes to form a network
+    const char* connectArgs1[] = {
+        "p2pcert-daemon",
+        "connect",
+        "127.0.0.1:8445"
+    };
+    daemon1->run(3, const_cast<char**>(connectArgs1));
+    
+    const char* connectArgs2[] = {
+        "p2pcert-daemon",
+        "connect",
+        "127.0.0.1:8446"
+    };
+    daemon1->run(3, const_cast<char**>(connectArgs2));
+    
+    const char* connectArgs3[] = {
+        "p2pcert-daemon",
+        "connect",
+        "127.0.0.1:8444"
+    };
+    daemon2->run(3, const_cast<char**>(connectArgs3));
+    
+    // Allow some time for node connections
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // 1. Request a certificate
+    const char* requestArgs[] = {
+        "p2pcert",
+        "request",
+        "lifecycle.example.com",
+        "--validation", "http",
+        "--webroot", "/tmp/p2pca-test/webroot",
+        "--p2p-node", "127.0.0.1:8444"
+    };
+    int result = certCli->run(8, const_cast<char**>(requestArgs));
+    EXPECT_EQ(result, 0);
+    
+    // 2. Verify the certificate exists
+    const char* listArgs[] = {
+        "p2pcert",
+        "list"
+    };
+    result = certCli->run(2, const_cast<char**>(listArgs));
+    EXPECT_EQ(result, 0);
+    
+    // 3. Renew the certificate
+    const char* renewArgs[] = {
+        "p2pcert",
+        "renew",
+        "lifecycle.example.com",
+        "--p2p-node", "127.0.0.1:8444"
+    };
+    result = certCli->run(5, const_cast<char**>(renewArgs));
+    EXPECT_EQ(result, 0);
+    
+    // 4. Install the certificate for a web server
+    const char* installArgs[] = {
+        "p2pcert",
+        "install",
+        "lifecycle.example.com",
+        "--server-type", "nginx"
+    };
+    result = certCli->run(5, const_cast<char**>(installArgs));
+    EXPECT_EQ(result, 0);
+    
+    // 5. Revoke the certificate
+    const char* revokeArgs[] = {
+        "p2pcert",
+        "revoke",
+        "lifecycle.example.com",
+        "--p2p-node", "127.0.0.1:8444",
+        "--reason", "superseded"
+    };
+    result = certCli->run(7, const_cast<char**>(revokeArgs));
+    EXPECT_EQ(result, 0);
+    
+    // Stop all daemons
+    const char* stopArgs[] = {
+        "p2pcert-daemon",
+        "stop"
+    };
+    daemon1->run(2, const_cast<char**>(stopArgs));
+    daemon2->run(2, const_cast<char**>(stopArgs));
+    daemon3.run(2, const_cast<char**>(stopArgs));
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

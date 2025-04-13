@@ -72,4 +72,15 @@ TEST_F(NetworkConsensusTest, TestValidateRequest) {
     node->addPeer("192.168.1.1");
     consensus = new NetworkConsensus(node);
     // Real validation would require mocking the network response
+}
+
+// Test that port configuration works correctly
+TEST_F(NetworkConsensusTest, TestPortConfiguration) {
+    int customPort = 8444;
+    NetworkConsensus customConsensus(node, customPort);
+    EXPECT_EQ(customConsensus.getPort(), customPort);
+    
+    // Test changing port
+    customConsensus.setPort(8445);
+    EXPECT_EQ(customConsensus.getPort(), 8445);
 } 
