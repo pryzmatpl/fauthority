@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
+#include <cmath>
 
 NetworkConsensus::NetworkConsensus(const FNode* n) : node(n) {
     updateActivePeers();
@@ -30,16 +31,25 @@ ConsensusResult NetworkConsensus::validateRequest(const SigningRequest& request)
         }
     }
     
-    if (validations < minimumValidations) {
-        return ConsensusResult::Rejected;
-    }
-    
-    return ConsensusResult::Approved;
+    // After checking all peers, if we don't have enough validations, reject the request
+    return ConsensusResult::Rejected;
 }
 
 int NetworkConsensus::getMinimumValidationsRequired() const {
-    // Require majority of peers to validate (including self)
-    return std::max(1, static_cast<int>(activePeers.size() / 2));
+    int peerCount = activePeers.size();
+    
+    // For networks with 3 or fewer nodes: All nodes must agree
+    if (peerCount <= 2) {  // 2 peers + this node = 3 nodes total
+        return peerCount;
+    }
+    // For networks with 4-6 nodes: At least 3 nodes must agree
+    else if (peerCount >= 3 && peerCount <= 5) {  // 3-5 peers + this node = 4-6 nodes total
+        return 3;
+    }
+    // For networks with 7+ nodes: More than 2/3 of nodes must agree
+    else {
+        return std::max(1, static_cast<int>(std::ceil((peerCount + 1) * 2.0 / 3.0)));
+    }
 }
 
 bool NetworkConsensus::hasMinimumPeers() const {

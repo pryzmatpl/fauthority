@@ -31,20 +31,45 @@ TEST_F(NetworkConsensusTest, TestWithPeers) {
 }
 
 TEST_F(NetworkConsensusTest, TestMinimumValidations) {
-    // Test with 1 peer
+    // Test with 1 peer (total 2 nodes)
     node->addPeer("192.168.1.1");
     consensus = new NetworkConsensus(node);
     EXPECT_EQ(consensus->getMinimumValidationsRequired(), 1);
     
-    // Test with 3 peers
+    // Test with 2 peers (total 3 nodes) - All nodes must agree
     node->addPeer("192.168.1.2");
+    consensus = new NetworkConsensus(node);
+    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 2);
+    
+    // Test with 3 peers (total 4 nodes) - At least 3 nodes must agree
     node->addPeer("192.168.1.3");
     consensus = new NetworkConsensus(node);
-    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 1);
+    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 3);
     
-    // Test with 5 peers
+    // Test with 5 peers (total 6 nodes) - At least 3 nodes must agree
     node->addPeer("192.168.1.4");
     node->addPeer("192.168.1.5");
     consensus = new NetworkConsensus(node);
-    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 2);
+    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 3);
+    
+    // Test with 7 peers (total 8 nodes) - More than 2/3 must agree
+    node->addPeer("192.168.1.6");
+    node->addPeer("192.168.1.7");
+    consensus = new NetworkConsensus(node);
+    EXPECT_EQ(consensus->getMinimumValidationsRequired(), 6); // 8 * 2/3 = 5.33, round up to 6
+}
+
+// Add a test for validateRequest with sufficient and insufficient peers
+TEST_F(NetworkConsensusTest, TestValidateRequest) {
+    // Mock SigningRequest
+    Certificate cert;
+    SigningRequest request(cert);
+    
+    // Test with no peers - should be insufficient
+    EXPECT_EQ(consensus->validateRequest(request), ConsensusResult::Insufficient);
+    
+    // Add a peer but can't test validation fully without mocking network communication
+    node->addPeer("192.168.1.1");
+    consensus = new NetworkConsensus(node);
+    // Real validation would require mocking the network response
 } 

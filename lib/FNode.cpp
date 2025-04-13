@@ -78,19 +78,35 @@ FNode& FNode::operator=(FNode const& rhs) {
 }
 
 
-FNode::FNode(FNode const& rhs) {
+FNode::FNode(FNode const& rhs) : socketFd(-1), keyPair(nullptr) {
     try {
-        auto temp = std::move(this);
-        *this = std::move(rhs);
-        delete temp;
+        address = rhs.address;
+        peers = rhs.peers;
+        
+        // Proper initialization of OpenSSL
+        initializeOpenSSL();
+        
+        // Copy the keypair if it exists
+        if (rhs.keyPair) {
+            EVP_PKEY *pkey = EVP_PKEY_new();
+            EVP_PKEY_set1_RSA(pkey, rhs.keyPair);
+            keyPair = EVP_PKEY_get1_RSA(pkey);
+            EVP_PKEY_free(pkey);
+            
+            if (!keyPair) {
+                throw std::runtime_error("Failed to copy RSA keyPair");
+            }
+        }
+        
+        std::cout << "P2P Node copied successfully\n";
     } catch (const std::exception& e) {
-        std::cerr << "Initialization failed: " << e.what() << std::endl;
+        std::cerr << "Copy initialization failed: " << e.what() << std::endl;
         cleanup();
         throw;
     }
 }
 
-FNode::FNode(string addr) {
+FNode::FNode(string addr) : socketFd(-1), keyPair(nullptr) {
     try {
         this->address = NodeInfo(addr, 0);
         initializeOpenSSL();
