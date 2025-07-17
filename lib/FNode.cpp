@@ -32,7 +32,8 @@ void FNode::generateKeyPair() {
     BN_free(e);
 
     // Save our key pair
-    keyPair = RSA_dup(rsa);
+    keyPair = RSAPrivateKey_dup(rsa);
+
     if (!keyPair) {
         EVP_PKEY_free(pkey);
         throw std::runtime_error("Failed to store RSA key pair");
@@ -123,9 +124,9 @@ FNode::FNode(FNode const& rhs) : socketFd(-1), keyPair(nullptr) {
     }
 }
 
-FNode::FNode(string addr) : socketFd(-1), keyPair(nullptr) {
+FNode::FNode(const std::string& addr) : socketFd(-1), keyPair(nullptr) {
     try {
-        this->address = NodeInfo(addr, 0);
+        this->address = NodeInfo(addr, "0");
         initializeOpenSSL();
         generateKeyPair();
         std::cout << "P2P Node initialized successfully\n";

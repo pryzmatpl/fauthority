@@ -151,7 +151,7 @@ int P2PCertDaemonCli::cmdStart(const std::vector<std::string>& args) {
         nodeAddr = getOptionValue(args, "--addr");
     } else if (nodeAddr.empty()) {
         // Try to get IP address
-        FILE* cmdOutput = popen("hostname -I | awk '{print $1}'", "r");
+        FILE* cmdOutput = popen("hostname | awk '{print $1}'", "r");
         if (cmdOutput) {
             char buffer[128];
             if (fgets(buffer, sizeof(buffer), cmdOutput) != nullptr) {
@@ -616,7 +616,7 @@ bool P2PCertDaemonCli::initializeNode() {
         delete signer;
         signer = nullptr;
     }
-    
+
     // Create a new node
     node = new FNode(nodeAddr);
         

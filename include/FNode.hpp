@@ -38,7 +38,7 @@ private:
     void generateKeyPair();
 
 public:
-    FNode(string addr);
+    FNode(const std::string& addr);
     FNode(FNode const&);
     FNode& operator=(FNode const&);
     void addPeer(const std::string& peerAddress);

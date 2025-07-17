@@ -63,7 +63,7 @@ TEST_F(NetworkConsensusTest, TestMinimumValidations) {
 TEST_F(NetworkConsensusTest, TestValidateRequest) {
     // Mock SigningRequest
     Certificate cert;
-    SigningRequest request(cert);
+    SigningRequest request;
     
     // Test with no peers - should be insufficient
     EXPECT_EQ(consensus->validateRequest(request), ConsensusResult::Insufficient);
